@@ -38,14 +38,22 @@ def execute_query(query, params=None):
     try:
         conn = connect_to_sqlserver() 
         cursor = conn.cursor()
+
         if params:
             cursor.execute(query, params)
         else:
             cursor.execute(query)
 
-        rows = cursor.fetchall()
+        # Verifica si es una consulta SELECT
+        if query.strip().lower().startswith("select"):
+            rows = cursor.fetchall()
+        else:
+            conn.commit()
+            rows = None
+        
         conn.close()
         return rows
+    
     except Exception as e:
         logging.error(f"Error al ejecutar query: {e}")
         return None

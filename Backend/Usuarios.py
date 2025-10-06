@@ -49,7 +49,7 @@ def crearUsuario(usuario: UsuarioBase):
         hashed
     )
     try:
-        execute_query(db, query, params)
+        execute_query(query, params)
         return {"ok"}
     except Exception as e:
         print(f"Error al crear usuario: {e}")
