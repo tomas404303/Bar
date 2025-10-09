@@ -1,59 +1,44 @@
-from dotenv import load_dotenv
-import os
 import pyodbc
-import logging
+import os
+from dotenv import load_dotenv, find_dotenv
 
-load_dotenv()
-
-db_config = {
-    "host": os.getenv("DB_HOST"),
-    "database": os.getenv("DB_DATABASE"),
-    "driver": os.getenv("DB_DRIVER", "ODBC Driver 17 for SQL Server")
-}
+load_dotenv(find_dotenv())
 
 def connect_to_sqlserver():
     try:
+        driver = os.getenv("DB_DRIVER")
+        host = os.getenv("DB_HOST")
+        database = os.getenv("DB_DATABASE")
+
         connection_string = (
-            f"DRIVER={{{db_config['driver']}}};"
-            f"SERVER={db_config['host']};"
-            f"DATABASE={db_config['database']};"
+            f"DRIVER={{{driver}}};"
+            f"SERVER={host};"
+            f"DATABASE={database};"
             "Trusted_Connection=yes;"
         )
-        connection = pyodbc.connect(connection_string)
-        logging.info("Conectado a SQL Server con Windows Authentication")
+
+        connection = pyodbc.connect(connection_string, autocommit=True)
+        print("✅ Conexión a SQL Server exitosa.")
         return connection
     except Exception as e:
-        logging.error(f"Error al conectar a SQL Server: {e}")
-        return None
+        print("❌ Error conectando a SQL Server:", e)
+        raise
 
-def disconnect_from_sqlserver(connection):
+
+def execute_query(connection, query, params=()):
+    cursor = connection.cursor()
     try:
-        if connection:
-            connection.close()
-            logging.info("Conexión cerrada")
+        cursor.execute(query, params)
+        connection.commit()
     except Exception as e:
-        logging.error(f"Error al cerrar conexión: {e}")
-
-def execute_query(query, params=None):
-    try:
-        conn = connect_to_sqlserver() 
-        cursor = conn.cursor()
-
-        if params:
-            cursor.execute(query, params)
-        else:
-            cursor.execute(query)
-
-        # Verifica si es una consulta SELECT
-        if query.strip().lower().startswith("select"):
-            rows = cursor.fetchall()
-        else:
-            conn.commit()
-            rows = None
+        print("❌ Error ejecutando query:", e)
+        raise
+    finally:
+        cursor.close()
         
-        conn.close()
-        return rows
-    
-    except Exception as e:
-        logging.error(f"Error al ejecutar query: {e}")
-        return None
+def fetch_one(connection, query, params=()):
+    cursor = connection.cursor()
+    cursor.execute(query, params)
+    row = cursor.fetchone()
+    cursor.close()
+    return row

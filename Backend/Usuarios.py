@@ -1,9 +1,13 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from Database import connect_to_sqlserver, execute_query, disconnect_from_sqlserver
-import bcrypt
+from Database import connect_to_sqlserver, execute_query, fetch_one
+from Security import encriptar_contraseña
+import pyodbc
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/usuarios",
+    tags=["usuarios"]
+)
 
 class UsuarioBase(BaseModel):
     nui: str
@@ -15,102 +19,108 @@ class UsuarioBase(BaseModel):
     usuario: str
     contraseña: str
 
-class UpdatePassword(BaseModel):
-    nuevaContraseña: str
-
-class UpdateEstado(BaseModel):
-    estadoUsuario: int
-
-class UpdateSede(BaseModel):
-    sedeOpera: int
-
-class UpdateCargo(BaseModel):
-    cargoDesempeña: int
+class UpdateUsuario(BaseModel):
+    estadoUsuario: int | None = None
+    cargoDesempeña: int | None = None
+    sedeOpera: int | None = None
+    nuevaContraseña: str | None = None
+    confirmarContraseña: str | None = None
 
 
-@router.post("/usuarios/")
-def crearUsuario(usuario: UsuarioBase):
+
+@router.post("/")
+def crear_usuario(data: UsuarioBase):
     db = connect_to_sqlserver()
-
-    hashed = bcrypt.hashpw(usuario.contraseña.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    hashed = encriptar_contraseña(data.contraseña)
 
     query = """
-        INSERT INTO usuario (nui, tipoDocumento, nombres_apellidos, estadoUsuario, cargoDesempeña, sedeOpera, usuario, contraseña)
+        INSERT INTO usuario (nui, tipoDocumento, nombres_apellidos, estadoUsuario,
+        cargoDesempeña, sedeOpera, usuario, contraseña)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """
-    params = (
-        usuario.nui,
-        usuario.tipoDocumento,
-        usuario.nombresApellidos,
-        usuario.estadoUsuario,
-        usuario.cargoDesempeña,
-        usuario.sedeOpera,
-        usuario.usuario,
-        hashed
-    )
+
     try:
-        execute_query(query, params)
-        return {"ok"}
-    except Exception as e:
-        print(f"Error al crear usuario: {e}")
-        return {"F"}
+        execute_query(db, query, (
+            data.nui, data.tipoDocumento, data.nombresApellidos,
+            data.estadoUsuario, data.cargoDesempeña, data.sedeOpera,
+            data.usuario, hashed
+        ))
+        return "OK"
+    except pyodbc.Error:
+        return "F"
     finally:
-        disconnect_from_sqlserver(db)
+        db.close()
 
 
-@router.put("/usuarios/{id}/password")
-def cambiarPassword(id: int, data: UpdatePassword):
+@router.get("/{id}")
+def obtener_usuario(id: int):
     db = connect_to_sqlserver()
-    hashed = bcrypt.hashpw(data.nuevaContraseña.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+    query = "SELECT * FROM usuario WHERE id = ?"
+    result = fetch_one(db, query, (id,))
 
-    query = "UPDATE usuario SET contraseña = ? WHERE id = ?"
-    try:
-        execute_query(db, query, (hashed, id))
-        return {"ok"}
-    except Exception as e:
-        print(f"Error al actualizar contraseña: {e}")
-        return {"F"}
-    finally:
-        disconnect_from_sqlserver(db)
+    if not result:
+        db.close()
+        return "F"
+
+    cursor = db.cursor()
+    cursor.execute(query, (id,))
+    columns = [column[0] for column in cursor.description]
+    cursor.close()
+
+    data = dict(zip(columns, result))
+    db.close()
+
+    return data  
 
 
-@router.put("/usuarios/{id}/estado")
-def cambiarEstado(id: int, data: UpdateEstado):
+
+@router.put("/{id}")
+def actualizar_usuario(id: int, data: UpdateUsuario):
     db = connect_to_sqlserver()
-    query = "UPDATE usuario SET estadoUsuario = ? WHERE id = ?"
+    cursor = db.cursor()
+
+    query_check = "SELECT id FROM usuario WHERE id = ?"
+    cursor.execute(query_check, (id,))
+    if not cursor.fetchone():
+        db.close()
+        return "F"
+
+    fields = []
+    values = []
+
+    if data.estadoUsuario is not None:
+        fields.append("estadoUsuario = ?")
+        values.append(data.estadoUsuario)
+
+    if data.cargoDesempeña is not None:
+        fields.append("cargoDesempeña = ?")
+        values.append(data.cargoDesempeña)
+
+    if data.sedeOpera is not None:
+        fields.append("sedeOpera = ?")
+        values.append(data.sedeOpera)
+
+    if data.nuevaContraseña and data.confirmarContraseña:
+        if data.nuevaContraseña == data.confirmarContraseña:
+            hashed = encriptar_contraseña(data.nuevaContraseña)
+            fields.append("contraseña = ?")
+            values.append(hashed)
+        else:
+            db.close()
+            return "F"
+
+    if not fields:
+        db.close()
+        return "F"
+
+    query_update = f"UPDATE usuario SET {', '.join(fields)} WHERE id = ?"
+    values.append(id)
+
     try:
-        execute_query(db, query, (data.estadoUsuario, id))
-        return {"ok"}
-    except Exception as e:
-        print(f"Error al actualizar estado: {e}")
-        return {"F"}
+        cursor.execute(query_update, tuple(values))
+        db.commit()
+        return "OK"
+    except pyodbc.Error:
+        return "F"
     finally:
-        disconnect_from_sqlserver(db)
-
-
-@router.put("/usuarios/{id}/sede")
-def cambiarSede(id: int, data: UpdateSede):
-    db = connect_to_sqlserver()
-    query = "UPDATE usuario SET sedeOpera = ? WHERE id = ?"
-    try:
-        execute_query(db, query, (data.sedeOpera, id))
-        return {"OK"}
-    except Exception as e:
-        print(f"Error al actualizar sede: {e}")
-        return {"F"}
-    finally:
-        disconnect_from_sqlserver(db)
-
-
-@router.put("/usuarios/{id}/cargo")
-def cambiarCargo(id: int, data: UpdateCargo):
-    db = connect_to_sqlserver()
-    query = "UPDATE usuario SET cargoDesempeña = ? WHERE id = ?"
-    try:
-        execute_query(db, query, (data.cargoDesempeña, id))
-        return {"ok"}
-    except Exception as e:
-        print(f"Error al actualizar cargo: {e}")
-        return {"F"}
-    finally:
-        disconnect_from_sqlserver(db)
+        db.close()
