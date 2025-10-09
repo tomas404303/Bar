@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import "./Tasks.css";
+import "../Shared/Tasks.css";
 
 
 function AdminTasks() {
@@ -10,6 +10,8 @@ function AdminTasks() {
             <div className="button-grid">
                 <button onClick={() => navigate("/dashboard/admin/locations")}>Manage Locations</button>
                 <button onClick={() => navigate("/dashboard/admin/users")}>Manage Users</button>
+            </div>
+            <div className="button-grid">
                 <button onClick={() => navigate("/dashboard/admin/tables")}>Manage Tables</button>
                 <button onClick={() => navigate("/dashboard/admin/inventory")}>Manage Inventory</button>
             </div>

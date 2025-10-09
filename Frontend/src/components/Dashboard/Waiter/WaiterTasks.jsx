@@ -1,4 +1,4 @@
-import "./Tasks.css";
+import "../Shared/Tasks.css";
 
 function WaiterTasks() {
     return (

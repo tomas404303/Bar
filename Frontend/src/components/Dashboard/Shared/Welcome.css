@@ -8,6 +8,7 @@
   gap: 15px;
 }
 
+/*
 .user-icon {
   background-color: #007bff;
   color: white;
@@ -19,18 +20,18 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-}
+}*/
 
 .welcome-text h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 24px;
   color: #1a1a1a;
 }
 
 .welcome-text p {
   margin: 5px 0 0;
   color: #444;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .highlight {

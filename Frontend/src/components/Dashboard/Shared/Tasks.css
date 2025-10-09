@@ -7,9 +7,9 @@
 }
 
 .role-section h3 {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
   color: #1a1a1a;
-  font-size: 17px;
+  font-size: 22px;
 }
 
 /* --- Botones --- */
@@ -17,6 +17,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
+  margin-top: 10px;
 }
 
 .button-grid button,
@@ -27,6 +28,7 @@
   padding: 10px;
   border-radius: 10px;
   font-weight: 600;
+  font-size: 15px;
   cursor: pointer;
   transition: background-color 0.25s ease;
 }

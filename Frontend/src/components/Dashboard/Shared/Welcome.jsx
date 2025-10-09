@@ -1,8 +1,7 @@
 import "./Welcome.css";
 
-function Welcome() {
-  const cargo = localStorage.getItem("cargo");
-  const usuario = localStorage.getItem("usuario");
+function Welcome({cargo, sede, usuario}) {
+  
   return (
     <div className="welcome-card">
       {/*<div className="user-icon">SA</div>*/}

@@ -5,7 +5,6 @@
   background-color: white;
   padding: 10px 30px;
   border-bottom: 1px solid #ddd;
-  font-family: "Segoe UI", sans-serif;
 }
 
 .navbar-left {
@@ -36,6 +35,7 @@
   text-decoration: none;
   color: #444;
   font-size: 16px;
+  cursor: pointer;
   transition: color 0.2s;
 }
 
@@ -46,6 +46,7 @@
 .navbar-right {
   display: flex;
   align-items: center;
+  gap: 80px;
 }
 
 .navbar-user {
@@ -64,4 +65,59 @@
 
 .navbar-user:hover {
   background-color: #0056b3;
+}
+
+/* Menú desplegable */
+.user-menu {
+  position: absolute;
+  top: 65px;
+  right: 10px;
+  background-color: white;
+  border: 1px solid #007bff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.user-menu button {
+  background: none;
+  border: none;
+  padding: 10px 20px;
+  width: 100%;
+  text-align: left;
+  font-weight: 500;
+  cursor: pointer;
+  color: #003b75;
+}
+
+.user-menu button:hover {
+  background-color: #e6f2ff;
+  border-radius: 8px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 480px){
+  .navbar {
+    padding: 10px 8px;
+  }
+
+  .navbar-logo {
+    width: 65px;
+    height: 65px;
+  }
+
+  .navbar-right {
+    gap: 30px;
+  }
 }

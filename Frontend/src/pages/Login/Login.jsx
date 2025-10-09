@@ -20,6 +20,7 @@ function Login() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ Usuario: usuario, Contrasena: contrasena }),
       });
+      
       const data = await response.json();
       if (data.status === "OK") {
         console.log(data);
@@ -36,6 +37,14 @@ function Login() {
       setError("No se pudo conectar al servidor");
     }
   };
+
+  const handleCloseModal = () => {
+    setError("");
+    setUsuario("");
+    setContrasena("");
+  };
+
+  const isFormIncomplete = !usuario.trim() || !contrasena.trim();
 
   return (
     <div className='login-background'>
@@ -58,15 +67,15 @@ function Login() {
             onChange={(e) => setContrasena(e.target.value)}
             required
           />
-          <button type="submit">Login</button>
+          <button type="submit" disabled={isFormIncomplete}>Login</button>
         </form>
 
         {/* Modal de error */}
         {error && (
           <div className="modal-error">
             <div className="modal-content">
-              <p>{error}</p>
-              <button onClick={() => setError("")}>Cerrar</button>
+              <p>Datos incorrectos</p>
+              <button onClick={handleCloseModal} >OK</button>
             </div>
           </div>
         )}
@@ -74,22 +83,5 @@ function Login() {
     </div>
   );
 }
-/*
-function Login() {
-  return (
-    <div className='login-background'>
-      <div className='login-container'>
-        <img className='login-logo' src={logo} alt="Logo Villa Drinks" />
-        <form className='login-form'>
-          <label>Username</label>
-          <input type="text" placeholder="Username" />
-          <label>Password</label>
-          <input type="password" placeholder="**********" />
-          <button type="submit">Login</button>
-        </form>
-      </div>
-    </div>
-  );
-}*/
 
 export default Login;

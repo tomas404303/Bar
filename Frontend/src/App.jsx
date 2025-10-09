@@ -2,10 +2,10 @@ import './App.css'
 import { Router, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login/Login.jsx';
 import Dashboard from './pages/Dashboard/Dashboard.jsx';
-import ManageLocations from './components/Dashboard/Administrator/ManageLocations.jsx';
-import ManageUsers from './components/Dashboard/Administrator/ManageUsers.jsx';
-import ManageTables from './components/Dashboard/Administrator/ManageTables.jsx';
-import ManageInventory from './components/Dashboard/Administrator/ManageInventory.jsx';
+import ManageLocations from './components/Dashboard/Administrator/ManageLocation/ManageLocations.jsx';
+import ManageUsers from './components/Dashboard/Administrator/ManageUser/ManageUsers.jsx';
+import ManageTables from './components/Dashboard/Administrator/ManageTable/ManageTables.jsx';
+import ManageInventory from './components/Dashboard/Administrator/ManageInventory/ManageInventory.jsx';
 
 function App() {
   return (

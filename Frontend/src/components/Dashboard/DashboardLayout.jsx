@@ -1,13 +1,13 @@
-import NavBar from "../../components/Dashboard/NavBar";
-import Welcome from "../../components/Dashboard/Welcome";
+import NavBar from "../Layout/NavBar";
+import Welcome from "./Shared/Welcome";
 import "./DashboardLayout.css";
 
-function DashboardLayout({ children, cargo, sede }) {
+function DashboardLayout({ children, cargo, sede, usuario }) {
     return (
         <div className="dashboardMain">
-            <NavBar cargo={cargo} sede={sede} />
+            <NavBar cargo={cargo} sede={sede} usuario={usuario} />
             <div className="dashboard-container">
-                <Welcome />
+                <Welcome cargo={cargo} sede={sede} usuario={usuario}/>
                 <div>{children}</div>
             </div>
             <footer></footer>
