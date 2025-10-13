@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from Database import connect_to_sqlserver, execute_query
+from Database import connect_to_sqlserver
 import pyodbc
 
 router = APIRouter(
@@ -12,12 +12,18 @@ class CrearMesas(BaseModel):
     sede: int
     cantidad: int
 
+class ActualizarMesas(BaseModel):
+    sede: int
+    numero: int
+
+
+
 @router.get("/sedes")
 def listar_sedes():
     db = connect_to_sqlserver()
     cursor = db.cursor()
     try:
-        query = "SELECT * FROM sucursales"
+        query = "SELECT id, nombreSucursal FROM sucursales"
         cursor.execute(query)
         rows = cursor.fetchall()
 
@@ -28,11 +34,10 @@ def listar_sedes():
         return resultado
 
     except pyodbc.Error as e:
-        print("Error al listar sedes:", e)
         return "F"
+
     finally:
         db.close()
-
 
 
 
@@ -42,14 +47,60 @@ def crear_mesas(data: CrearMesas):
     cursor = db.cursor()
 
     try:
-        query_insert = "INSERT INTO mesa (cantidad, sucursales) VALUES (?, ?)"
-        cursor.execute(query_insert, (data.cantidad, data.sede))
+        query_select = "SELECT cantidad FROM mesa WHERE sucursales = ?"
+        cursor.execute(query_select, (data.sede,))
+        result = cursor.fetchone()
 
+        if result:
+            cantidad_actual = result[0] or 0
+            nueva_cantidad = cantidad_actual + data.cantidad
+
+            query_update = "UPDATE mesa SET cantidad = ? WHERE sucursales = ?"
+            cursor.execute(query_update, (nueva_cantidad, data.sede))
+            db.commit()
+            return "OK"
+
+        else:
+            query_insert = "INSERT INTO mesa (cantidad, sucursales) VALUES (?, ?)"
+            cursor.execute(query_insert, (data.cantidad, data.sede))
+            db.commit()
+            return "OK"
+
+    except pyodbc.Error as e:
+        return "F"
+
+    finally:
+        db.close()
+
+
+@router.put("/actualizarmesas")
+def actualizar_mesas(data: ActualizarMesas):
+    db = connect_to_sqlserver()
+    cursor = db.cursor()
+
+    try:
+        query_select = "SELECT cantidad FROM mesa WHERE sucursales = ?"
+        cursor.execute(query_select, (data.sede,))
+        result = cursor.fetchone()
+
+        if not result:
+            return "F"
+
+        cantidad_actual = result[0] or 0
+        nueva_cantidad = cantidad_actual - data.numero
+
+        if nueva_cantidad < 0:
+            return "F"
+
+        query_update = "UPDATE mesa SET cantidad = ? WHERE sucursales = ?"
+        cursor.execute(query_update, (nueva_cantidad, data.sede))
         db.commit()
+
         return "OK"
 
     except pyodbc.Error as e:
-        print(" Error creando mesas:", e)
         return "F"
+
     finally:
-        db.close()
+        if db:
+            db.close()

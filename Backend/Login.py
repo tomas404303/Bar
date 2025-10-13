@@ -24,14 +24,13 @@ def validar_estado_recursivo(tipo, id_entidad):
         db.close()
 
         if not result:
-            return "F"  # devolvemos 'F' como string, no booleano
+            return "F" 
 
-        estadoUsuario, sedeOpera = result  # quitamos [0]
+        estadoUsuario, sedeOpera = result  
 
         if estadoUsuario == 0:
             return "F"
 
-        # 🔁 llamada recursiva: validar la sede
         return validar_estado_recursivo("sede", sedeOpera)
 
     elif tipo == "sede":
@@ -45,9 +44,8 @@ def validar_estado_recursivo(tipo, id_entidad):
         estado_sede = result[0]
         if estado_sede == 0:
             return "F"
-        return "OK"  # ✅ sede activa
+        return "OK"  
 
-    # En caso de tipo no reconocido
     return "F"
 
 @router.post("/login")

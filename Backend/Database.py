@@ -18,10 +18,10 @@ def connect_to_sqlserver():
         )
 
         connection = pyodbc.connect(connection_string, autocommit=True)
-        print("✅ Conexión a SQL Server exitosa.")
+        print("Conexión a SQL Server exitosa.")
         return connection
     except Exception as e:
-        print("❌ Error conectando a SQL Server:", e)
+        print("Error conectando a SQL Server:", e)
         raise
 
 
@@ -31,7 +31,7 @@ def execute_query(connection, query, params=()):
         cursor.execute(query, params)
         connection.commit()
     except Exception as e:
-        print("❌ Error ejecutando query:", e)
+        print(" Error ejecutando query:", e)
         raise
     finally:
         cursor.close()
