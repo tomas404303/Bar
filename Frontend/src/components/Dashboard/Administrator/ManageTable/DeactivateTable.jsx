@@ -1,4 +1,30 @@
+import { useState, useEffect } from "react";
+
 function DeactivateTable() {
+
+    const [success, setSuccess] = useState("");
+    const [error, setError] = useState("");
+    const [sedes, setSedes] = useState([]);
+
+    // Cargar sedes al select
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [resSedes] = await Promise.all([
+                    fetch("http://localhost:8000/mesas/sedes")
+                ]);
+
+                const dataSedes = await resSedes.json();
+
+                setSedes(dataSedes);
+            } catch (error) {
+                console.error("Error cargando datos:", error);
+            }
+        };
+
+        fetchData();
+    }, []);
+
     return (
         <section className="section">
             <h2 className="title">Deactivate Number of Tables per Branch</h2>
@@ -8,7 +34,11 @@ function DeactivateTable() {
                         <label>Branch</label>
                         <select required>
                             <option value="" disabled selected hidden>Select Branch</option>
-                            <option value="sede96">96</option>
+                            {sedes.map((sede) => (
+                                <option key={sede.id} value={sede.id}>
+                                    {sede.nombreSucursal}
+                                </option>
+                            ))}
                         </select>
                     </div>
                     <div>

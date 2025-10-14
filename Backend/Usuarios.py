@@ -45,7 +45,7 @@ def crear_usuario(data: UsuarioBase):
             data.estadoUsuario, data.cargoDesempeña, data.sedeOpera,
             data.usuario, hashed
         ))
-        return "OK"
+        return {"status": "OK"}
     except pyodbc.Error:
         return "F"
     finally:
@@ -119,7 +119,7 @@ def actualizar_usuario(id: int, data: UpdateUsuario):
     try:
         cursor.execute(query_update, tuple(values))
         db.commit()
-        return "OK"
+        return {"status": "OK"}
     except pyodbc.Error:
         return "F"
     finally:

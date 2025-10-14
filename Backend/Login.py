@@ -65,16 +65,17 @@ async def login(request: LoginRequest):
     result = cursor.fetchone()
     cursor.close()
     db.close()
+
     if not result:
-        return "Usuario no encontrado"
+        return {"status": "F", "reason": "Usuario no encontrado"}
 
     id_usuario, contrasena_db, sede, usuario, cargo = result
 
     if not verificar_contraseña(request.Contrasena, contrasena_db.strip()):
-        return "Contraseña incorrecta"
+        return {"status": "F", "reason": "Contraseña incorrecta"}
 
     estado_validacion = validar_estado_recursivo("usuario", id_usuario)
     if estado_validacion != "OK":
         return estado_validacion
 
-    return "OK"
+    return {"status": "OK", "cargo": {cargo}, "sede": {sede}, "usuario": {usuario}}

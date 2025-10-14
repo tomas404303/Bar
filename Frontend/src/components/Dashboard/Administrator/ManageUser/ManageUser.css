@@ -159,6 +159,7 @@ select:focus {
   margin-top: 10px;
 }
 
+/* Save and cancel buttons */
 .save-btn {
   background-color: #007bff;
   color: white;

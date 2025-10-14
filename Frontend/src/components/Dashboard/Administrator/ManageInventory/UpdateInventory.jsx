@@ -25,6 +25,12 @@ function UpdateInventory() {
                             <option value="grey-goose">Grey Goose Vodka</option>
                         </select>
                     </div>
+                </div>
+                <div className="form-row">
+                    <div>
+                        <label>Category</label>
+                        <input type="text" />
+                    </div>
                     <div>
                         <label>Status</label>
                         <select required>
@@ -32,15 +38,15 @@ function UpdateInventory() {
                             <option value="active">Active</option>
                             <option value="suspended">Suspended</option>
                         </select>
-                    </div>
+                    </div>   
                 </div>
                 <div className="form-row">
                     <div>
-                        <label>Name</label>
+                        <label>Cost</label>
                         <input type="text" />
                     </div>
                     <div>
-                        <label>Address</label>
+                        <label>Sale price</label>
                         <input type="text" />
                     </div>
                 </div>

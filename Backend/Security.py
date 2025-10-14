@@ -9,6 +9,7 @@ def verificar_contraseña(password: str, hashed: str) -> bool:
     try:
         salt, hash_value = hashed.split('$')
         check_hash = hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
+        print(check_hash == hash_value)
         return check_hash == hash_value
     except Exception:
         return False
