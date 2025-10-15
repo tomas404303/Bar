@@ -40,10 +40,8 @@ function ManageInventory() {
                         <table className="table">
                             <thead>
                                 <tr>
-                                    <th>Code</th>
                                     <th>Name</th>
                                     <th>Category</th>
-                                    <th>Branch</th>
                                     <th>Cost</th>
                                     <th>Sale Price</th>
                                     <th>Status</th>
@@ -52,10 +50,8 @@ function ManageInventory() {
                             <tbody>
                                 {productos.map((producto) => (
                                     <tr key={producto.id}>
-                                        <td>{producto.codigoProducto}</td>
                                         <td>{producto.nombreProducto}</td>
                                         <td>{producto.categoria}</td>
-                                        <td>{producto.sede}</td>
                                         <td>$ {producto.costo}</td>
                                         <td>$ {producto.precioVenta}</td>
                                         <td><span className={`status ${producto.estado === 1 ? "active" : "suspended"}`}>

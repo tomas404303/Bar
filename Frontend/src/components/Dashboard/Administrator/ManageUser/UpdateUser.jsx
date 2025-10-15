@@ -131,6 +131,7 @@ function UpdateUser({onUsuario}) {
         <div>
             <section className="section" >
                 <h2 className="title">Update User</h2>
+                <p><b>Note: </b>just fill in the data to be changed.</p>
                 <form className="form" onSubmit={handleSubmit}>
                     <div className="form-row">
                         <div>

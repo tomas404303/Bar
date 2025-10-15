@@ -163,12 +163,12 @@ function UpdateInventory({ onProducto }) {
                     <div>
                         <label>Cost</label>
                         <input type="number" name="costo" value={formData.costo}
-                            onChange={handleChange} required />
+                            onChange={handleChange} min="1" step="1" required />
                     </div>
                     <div>
                         <label>Sale price</label>
                         <input type="number" name="precioVenta" value={formData.precioVenta}
-                            onChange={handleChange} required />
+                            onChange={handleChange} min="1" step="1" required />
                     </div>
                 </div>
 
