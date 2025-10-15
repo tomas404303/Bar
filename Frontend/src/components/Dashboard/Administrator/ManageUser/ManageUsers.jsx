@@ -1,12 +1,36 @@
 import NavBar from "../../../Layout/NavBar";
 import AddUser from "./AddUser";
 import UpdateUser from "./UpdateUser";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./ManageUser.css";
 
 function ManageUsers() {
     const usuario = localStorage.getItem("usuario");
     const [activateTab, setActivateTab] = useState("add");
+    const [usuarios, setUsuarios] = useState([]);
+
+    const fetchData = async () => {
+        try {
+            const [resUsuarios] = await Promise.all([
+                fetch("http://localhost:8000/usuarios/")
+            ]);
+
+            const dataUsuarios = await resUsuarios.json();
+
+            setUsuarios(dataUsuarios);
+        } catch (error) {
+            console.error("Error loading data:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const handleUsuario = () => {
+        fetchData();
+    };
+
     return (
         <div className="dashboardMain">
             <NavBar usuario={usuario} />
@@ -27,30 +51,18 @@ function ManageUsers() {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>CC-1231231231</td>
-                                    <td>German Medina</td>
-                                    <td>jef_Ari</td>
-                                    <td>Admin</td>
-                                    <td>La 93</td>
-                                    <td><span className="status active">Active</span></td>
-                                </tr>
-                                <tr>
-                                    <td>PPT-3232323232</td>
-                                    <td>Daniel Tom</td>
-                                    <td>Tom_Riv</td>
-                                    <td>Cashier</td>
-                                    <td>La 93</td>
-                                    <td><span className="status active">Active</span></td>
-                                </tr>
-                                <tr>
-                                    <td>CC-1231231231</td>
-                                    <td>Williams Dell</td>
-                                    <td>Joh_Avi</td>
-                                    <td>Waiter</td>
-                                    <td>La 93</td>
-                                    <td><span className="status suspended">Suspended</span></td>
-                                </tr>
+                                {usuarios.map((usuario) => (
+                                    <tr key={usuario.id}>
+                                        <td>{usuario.tipoDocumento} - {usuario.nui}</td>
+                                        <td>{usuario.nombres_apellidos}</td>
+                                        <td>{usuario.usuario}</td>
+                                        <td>{usuario.cargoDesempeña}</td>
+                                        <td>{usuario.sedeOpera}</td>
+                                        <td><span className={`status ${usuario.estadoUsuario === 1 ? "active" : "suspended"}`}>
+                                            {usuario.estadoUsuario === 1 ? "Active" : "Suspended"}
+                                        </span></td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
@@ -70,7 +82,7 @@ function ManageUsers() {
                 </section>
                 <section>
                     <div className="tab-content">
-                        {activateTab === "add" ? <AddUser /> : <UpdateUser />}
+                        {activateTab === "add" ? <AddUser onUsuario={handleUsuario}/> : <UpdateUser onUsuario={handleUsuario}/>}
                     </div>
                 </section>
             </div>

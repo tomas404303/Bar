@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-function AddUser() {
+function AddUser({onUsuario}) {
     const [formData, setFormData] = useState({
         tipoDocumento: "",
         nui: "",
@@ -13,20 +13,28 @@ function AddUser() {
     const [success, setSuccess] = useState("");
     const [error, setError] = useState("");
     const [sedes, setSedes] = useState([]);
+    const [documentos, setDocumentos] = useState([]);
+    const [roles, setRoles] = useState([]);
 
     // Cargar sedes al select
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [resSedes] = await Promise.all([
-                    fetch("http://localhost:8000/mesas/sedes")
+                const [resSedes, resDocumentos, resRoles] = await Promise.all([
+                    fetch("http://localhost:8000/mesas/sedes"),
+                    fetch("http://localhost:8000/usuarios/documentos/listar"),
+                    fetch("http://localhost:8000/usuarios/roles/listar")
                 ]);
 
                 const dataSedes = await resSedes.json();
+                const dataDocumentos = await resDocumentos.json();
+                const dataRoles = await resRoles.json();
 
                 setSedes(dataSedes);
+                setDocumentos(dataDocumentos);
+                setRoles(dataRoles);
             } catch (error) {
-                console.error("Error cargando datos:", error);
+                console.error("Error loading data:", error);
             }
         };
 
@@ -64,7 +72,7 @@ function AddUser() {
             const result = await response.json();
 
             if (result.status === "OK") {
-                setSuccess("Usuario creado exitosamente");
+                setSuccess("User created successfully");
                 setFormData({
                     tipoDocumento: "",
                     nui: "",
@@ -74,8 +82,10 @@ function AddUser() {
                     cargoDesempeña: "",
                     sedeOpera: "",
                 });
+
+                onUsuario();
             } else {
-                setError("No se pudo crear el usuario");
+                setError("Error creating user");
             }
         } catch (error) {
             console.error("Error:", error);
@@ -108,14 +118,18 @@ function AddUser() {
                         <label>ID Type</label>
                         <select name="tipoDocumento" value={formData.tipoDocumento}
                             onChange={handleChange} required>
-                            <option value="" disabled selected hidden>Select ID Type</option>
-                            <option value={3}>nui</option>
+                            <option value="" disabled hidden>Select ID Type</option>
+                            {documentos.map((documento) => (
+                                <option key={documento.id} value={documento.id}>
+                                    {documento.definicion}
+                                </option>
+                            ))}
                         </select>
                     </div>
                     <div>
                         <label>ID Number</label>
-                        <input type="text" maxlength="10" pattern="\d{10}"
-                            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+                        <input type="text" maxLength="10" pattern="\d{10}"
+                            onInput={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
                             title="Debe contener exactamente 10 números y sin espacios"
                             name="nui" value={formData.nui} onChange={handleChange} required />
                     </div>
@@ -141,8 +155,7 @@ function AddUser() {
                         <label>Password</label>
                         <input type="password" name="contraseña" 
                         pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{8,12}$" 
-                        title="Debe tener entre 8 y 12 caracteres, al menos una mayúscula, una minúscula, 
-                        un número y un carácter especial, sin espacios."  value={formData.contraseña}
+                        title="Debe tener entre 8 y 12 caracteres, al menos una mayúscula, una minúscula, un número y un carácter especial, sin espacios"  value={formData.contraseña}
                             onChange={handleChange} placeholder="**********" required />
                     </div>
                 </div>
@@ -152,20 +165,22 @@ function AddUser() {
                         <label>Role</label>
                         <select name="cargoDesempeña" value={formData.cargoDesempeña}
                             onChange={handleChange} required>
-                            <option value="" disabled selected hidden>Select Role</option>
-                            <option value={3}>Administrator</option>
-                            <option value={2}>Cashier</option>
-                            <option value={1}>Waiter</option>
+                            <option value="" disabled hidden>Select Role</option>
+                            {roles.map((rol) => (
+                                <option key={rol.id} value={rol.id}>
+                                    {rol.cargo}
+                                </option>
+                            ))}
                         </select>
                     </div>
                     <div>
                         <label>Branch</label>
                         <select name="sedeOpera" value={formData.sedeOpera}
                             onChange={handleChange} required>
-                            <option value="" disabled selected hidden>Select Branch</option>
+                            <option value="" disabled hidden>Select Branch</option>
                             {sedes.map((sede) => (
                                 <option key={sede.id} value={sede.id}>
-                                    {sede.nombreSucursal}
+                                    {sede.nombre}
                                 </option>
                             ))}
                         </select>

@@ -1,17 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+import os
+
 from Login import router as login_router
 from Usuarios import router as usuario_router
 from Mesas import router as mesas_router
-
-import os
-from dotenv import load_dotenv
+from Sedes import router as sedes_router 
+from Productos import router as productos_router 
 
 load_dotenv(dotenv_path='.venv/.env')
 
 app = FastAPI(
-    title="Microservicio de Autenticación,Registro y mesas",
-    description="API para autenticación de usuarios, registro y manejo de datos financieros",
+    title="Microservicio de inventarios de un BAR",
+    description="API inventarios de un bar",
     version="1.0.0"
 )
 
@@ -28,6 +30,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Agregar los routers
 app.include_router(login_router)
 app.include_router(usuario_router)
 app.include_router(mesas_router)
+app.include_router(sedes_router)
+app.include_router(productos_router)

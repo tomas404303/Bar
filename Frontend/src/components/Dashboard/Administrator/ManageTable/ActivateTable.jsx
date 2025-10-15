@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 
-function ActivateTable() {
-
+function ActivateTable({onMesa}) {
+    const [formData, setFormData] = useState({
+        cantidad: "",
+        sucursales: "",
+    });
     const [success, setSuccess] = useState("");
     const [error, setError] = useState("");
     const [sedes, setSedes] = useState([]);
@@ -18,41 +21,113 @@ function ActivateTable() {
 
                 setSedes(dataSedes);
             } catch (error) {
-                console.error("Error cargando datos:", error);
+                console.error("Error loading data:", error);
             }
         };
 
         fetchData();
     }, []);
 
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setSuccess("");
+        setError("");
+
+        try {
+            const response = await fetch("http://localhost:8000/mesas/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    cantidad:  parseInt(formData.cantidad),
+                    sede: formData.sucursales,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (result.status === "OK") {
+                setSuccess("Number of tables updated correctly");
+                setFormData({
+                    cantidad: "",
+                    sucursales: "",
+                });
+
+                onMesa();
+            } else {
+                setError("Error updating number of tables");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+        }
+    };
+
+    const handleClean = () => {
+        setFormData({
+            cantidad: "",
+            sucursales: "",
+        })
+    }
+
+    const handleCloseModal = () => {
+        setSuccess("");
+        setError("");
+    };
+
     return (
         <section className="section">
-            <h2 className="title">Activate Number of Tables per Branch</h2>
-            <form className="form">
+            <h2 className="title">Increase Number of Tables per Branch</h2>
+            <form className="form" onSubmit={handleSubmit}>
                 <div className="form-row">
                     <div>
                         <label>Branch</label>
-                        <select required>
-                            <option value="" disabled selected hidden>Select Branch</option>
+                        <select name="sucursales" value={formData.sucursales}
+                            onChange={handleChange} required>
+                            <option value="" disabled hidden>Select Branch</option>
                             {sedes.map((sede) => (
                                 <option key={sede.id} value={sede.id}>
-                                    {sede.nombreSucursal}
+                                    {sede.nombre}
                                 </option>
                             ))}
                         </select>
                     </div>
                     <div>
                         <label>Number of Tables</label>
-                        <input type="number" min="1" step="1" />
+                        <input type="number" name="cantidad" value={formData.cantidad}
+                            onChange={handleChange} min="1" step="1" required/>
                     </div>
                 </div>
                 <div className="form-row">
                     <div className="button-row">
                         <button type="submit" className="save-btn">Save Changes</button>
-                        <button type="button" className="cancel-btn">Cancel</button>
+                        <button type="button" className="cancel-btn" onClick={handleClean}>Cancel</button>
                     </div>
                 </div>
             </form>
+            {/* Modal de Success */}
+            {success && (
+                <div className="modal-success">
+                    <div className="modal-content">
+                        <p>{success}</p>
+                        <button onClick={handleCloseModal}>OK</button>
+                    </div>
+                </div>
+            )}
+            {/* Modal de error */}
+            {error && (
+                <div className="modal-error">
+                    <div className="modal-content">
+                        <p>{error}</p>
+                        <button onClick={handleCloseModal} >OK</button>
+                    </div>
+                </div>
+            )}
         </section>
     )
 }

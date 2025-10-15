@@ -44,7 +44,7 @@ function NavBar({ cargo, sede, usuario }) {
         {/* Menú desplegable */}
         {showMenu && (
           <div className="user-menu">
-            <button onClick={handleLogout}>Cerrar sesión</button>
+            <button onClick={handleLogout}>Log out</button>
           </div>
         )}
       </div>

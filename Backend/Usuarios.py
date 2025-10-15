@@ -9,6 +9,7 @@ router = APIRouter(
     tags=["usuarios"]
 )
 
+
 class UsuarioBase(BaseModel):
     nui: str
     tipoDocumento: int
@@ -18,6 +19,7 @@ class UsuarioBase(BaseModel):
     sedeOpera: int
     usuario: str
     contraseña: str
+
 
 class UpdateUsuario(BaseModel):
     estadoUsuario: int | None = None
@@ -45,82 +47,155 @@ def crear_usuario(data: UsuarioBase):
             data.estadoUsuario, data.cargoDesempeña, data.sedeOpera,
             data.usuario, hashed
         ))
-        return {"status": "OK"}
-    except pyodbc.Error:
+        return {"status":"OK"}
+    except pyodbc.Error as e:
         return "F"
     finally:
         db.close()
 
 
-@router.get("/{id}")
-def obtener_usuario(id: int):
-    db = connect_to_sqlserver()
-    query = "SELECT * FROM usuario WHERE id = ?"
-    result = fetch_one(db, query, (id,))
-
-    if not result:
-        db.close()
-        return "F"
-
-    cursor = db.cursor()
-    cursor.execute(query, (id,))
-    columns = [column[0] for column in cursor.description]
-    cursor.close()
-
-    data = dict(zip(columns, result))
-    db.close()
-
-    return data  
-
-
-
-@router.put("/{id}")
-def actualizar_usuario(id: int, data: UpdateUsuario):
+@router.get("/{nui}")
+def obtener_usuario(nui: str):
     db = connect_to_sqlserver()
     cursor = db.cursor()
+    try:
+        query = "SELECT * FROM usuario WHERE nui = ?"
+        cursor.execute(query, (nui,))
+        result = cursor.fetchone()
 
-    query_check = "SELECT id FROM usuario WHERE id = ?"
-    cursor.execute(query_check, (id,))
-    if not cursor.fetchone():
-        db.close()
+        if not result:
+            return "F"
+
+        columns = [column[0] for column in cursor.description]
+        data = dict(zip(columns, result))
+        return data
+
+    except pyodbc.Error as e:
         return "F"
 
-    fields = []
-    values = []
+    finally:
+        db.close()
 
-    if data.estadoUsuario is not None:
-        fields.append("estadoUsuario = ?")
-        values.append(data.estadoUsuario)
 
-    if data.cargoDesempeña is not None:
-        fields.append("cargoDesempeña = ?")
-        values.append(data.cargoDesempeña)
 
-    if data.sedeOpera is not None:
-        fields.append("sedeOpera = ?")
-        values.append(data.sedeOpera)
+@router.put("/actualizar/{nui}")
+def actualizar_usuario(nui: str, data: UpdateUsuario):
+    db = connect_to_sqlserver()
+    cursor = db.cursor()
 
-    if data.nuevaContraseña and data.confirmarContraseña:
-        if data.nuevaContraseña == data.confirmarContraseña:
-            hashed = encriptar_contraseña(data.nuevaContraseña)
-            fields.append("contraseña = ?")
-            values.append(hashed)
-        else:
+    try:
+        query_check = "SELECT nui FROM usuario WHERE nui = ?"
+        cursor.execute(query_check, (nui,))
+        if not cursor.fetchone():
             db.close()
             return "F"
 
-    if not fields:
-        db.close()
-        return "F"
+        fields = []
+        values = []
 
-    query_update = f"UPDATE usuario SET {', '.join(fields)} WHERE id = ?"
-    values.append(id)
+        if data.estadoUsuario is not None:
+            fields.append("estadoUsuario = ?")
+            values.append(data.estadoUsuario)
 
-    try:
+        if data.cargoDesempeña is not None:
+            fields.append("cargoDesempeña = ?")
+            values.append(data.cargoDesempeña)
+
+        if data.sedeOpera is not None:
+            fields.append("sedeOpera = ?")
+            values.append(data.sedeOpera)
+
+        if data.nuevaContraseña and data.confirmarContraseña:
+            if data.nuevaContraseña == data.confirmarContraseña:
+                hashed = encriptar_contraseña(data.nuevaContraseña)
+                fields.append("contraseña = ?")
+                values.append(hashed)
+            else:
+                db.close()
+                return "F"
+
+        if not fields:
+            db.close()
+            return "F"
+
+        # Ejecutar actualización
+        query_update = f"UPDATE usuario SET {', '.join(fields)} WHERE nui = ?"
+        values.append(nui)
         cursor.execute(query_update, tuple(values))
         db.commit()
-        return {"status": "OK"}
-    except pyodbc.Error:
+
+        return {"status":"OK"}
+
+    except pyodbc.Error as e:
+        return "F"
+
+    finally:
+        db.close()
+
+
+@router.get("/roles/listar")
+def listar_roles():
+    db = connect_to_sqlserver()
+    cursor = db.cursor()
+    try:
+        query = "SELECT id, cargo FROM roles"
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        if not rows:
+            return "F"
+        return [{"id": r[0], "cargo": r[1]} for r in rows]
+    except pyodbc.Error as e:
+        return "F"
+    finally:
+        db.close()
+
+
+@router.get("/documentos/listar")
+def listar_tipos_documento():
+    db = connect_to_sqlserver()
+    cursor = db.cursor()
+    try:
+        query = "SELECT id, definicion FROM tDocumento"
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        if not rows:
+            return "F"
+        return [{"id": r[0], "definicion": r[1]} for r in rows]
+    except pyodbc.Error as e:
+        return "F"
+    finally:
+        db.close()
+
+
+@router.get("/")
+def listar_usuarios():
+    db = connect_to_sqlserver()
+    cursor = db.cursor()
+    try:
+        query = """
+            SELECT u.id, u.nui, u.nombres_apellidos, u.usuario, r.cargo, s.nombre, u.estadoUsuario, d.abrevicion
+            FROM usuario u
+            INNER JOIN roles r ON u.cargoDesempeña = r.id
+            INNER JOIN sucursales s ON u.sedeOpera = s.id
+            INNER JOIN tDocumento d ON u.tipoDocumento = d.id
+        """
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        if not rows:
+            return "F"
+        return [
+            {
+                "id": r[0],
+                "nui": r[1],
+                "nombres_apellidos": r[2],
+                "usuario": r[3],
+                "cargoDesempeña": r[4],
+                "sedeOpera": r[5],
+                "estadoUsuario": r[6],
+                "tipoDocumento": r[7]
+            } for r in rows
+            ]
+    except pyodbc.Error as e:
         return "F"
     finally:
         db.close()

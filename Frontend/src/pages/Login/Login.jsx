@@ -30,11 +30,11 @@ function Login() {
         navigate("/dashboard");
       } else {
         // mostrar modal de error
-        setError(data.reason || "Error al iniciar sesión");
+        setError(data.reason || "Login error");
       }
     } catch (error) {
       console.error("Error:", error);
-      setError("No se pudo conectar al servidor");
+      setError("Could not connect to the server");
     }
   };
 
@@ -74,7 +74,7 @@ function Login() {
         {error && (
           <div className="modal-error">
             <div className="modal-content">
-              <p>Datos incorrectos</p>
+              <p>Incorrect data</p>
               <button onClick={handleCloseModal} >OK</button>
             </div>
           </div>

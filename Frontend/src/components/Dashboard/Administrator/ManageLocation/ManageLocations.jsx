@@ -1,11 +1,35 @@
 import NavBar from "../../../Layout/NavBar";
 import AddLocation from "./AddLocation";
 import UpdateLocation from "./UpdateLocation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function ManageLocations() {
     const usuario = localStorage.getItem("usuario");
     const [activateTab, setActivateTab] = useState("add");
+    const [sedes, setSedes] = useState([]);
+
+    const fetchData = async () => {
+        try {
+            const [resSedes] = await Promise.all([
+                fetch("http://localhost:8000/sedes/")
+            ]);
+
+            const dataSedes = await resSedes.json();
+
+            setSedes(dataSedes);
+        } catch (error) {
+            console.error("Error loading data:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const handleSede = () => {
+        fetchData();
+    };
+
     return (
         <div className="dashboardMain">
             <NavBar usuario={usuario}/>
@@ -17,26 +41,20 @@ function ManageLocations() {
                             <thead>
                                 <tr>
                                     <th>Name</th>
-                                    <th>Locations</th>
+                                    <th>Address</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>Central Chapinero</td>
-                                    <td>Calle 75</td>
-                                    <td><span className="status active">Active</span></td>
-                                </tr>
-                                <tr>
-                                    <td>Usaquén Norte</td>
-                                    <td>Transversal 85</td>
-                                    <td><span className="status active">Active</span></td>
-                                </tr>
-                                <tr>
-                                    <td>La 93</td>
-                                    <td>Avenida Caracas</td>
-                                    <td><span className="status suspended">Suspended</span></td>
-                                </tr>
+                                {sedes.map((sede) => (
+                                    <tr key={sede.id}>
+                                        <td>{sede.nombre}</td>
+                                        <td>{sede.direccion}</td>
+                                        <td><span className={`status ${sede.estado === true ? "active" : "suspended"}`}>
+                                            {sede.estado === true ? "Active" : "Suspended"}
+                                        </span></td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
@@ -56,7 +74,7 @@ function ManageLocations() {
                 </section>
                 <section>
                     <div className="tab-content">
-                        {activateTab === "add" ? <AddLocation /> : <UpdateLocation />}
+                        {activateTab === "add" ? <AddLocation onSede={handleSede}/> : <UpdateLocation onSede={handleSede}/>}
                     </div>
                 </section>
             </div>

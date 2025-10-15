@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 
-function UpdateUser() {
+function UpdateUser({onUsuario}) {
     const [formData, setFormData] = useState({
-        id: "",
+        nui: "",
         estadoUsuario: "",
         cargoDesempeña: "",
         sedeOpera: "",
@@ -13,20 +13,24 @@ function UpdateUser() {
     const [success, setSuccess] = useState("");
     const [error, setError] = useState("");
     const [sedes, setSedes] = useState([]);
+    const [roles, setRoles] = useState([]);
 
     // Cargar sedes al select
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [resSedes] = await Promise.all([
-                    fetch("http://localhost:8000/mesas/sedes")
+                const [resSedes, resRoles] = await Promise.all([
+                    fetch("http://localhost:8000/mesas/sedes"),
+                    fetch("http://localhost:8000/usuarios/roles/listar")
                 ]);
 
                 const dataSedes = await resSedes.json();
+                const dataRoles = await resRoles.json();
 
                 setSedes(dataSedes);
+                setRoles(dataRoles);
             } catch (error) {
-                console.error("Error cargando datos:", error);
+                console.error("Error loading data:", error);
             }
         };
 
@@ -35,10 +39,10 @@ function UpdateUser() {
 
     // Buscar usuario cuando se sale del campo ID
     const handleIdBlur = async () => {
-        if (!formData.id) return;
+        if (!formData.nui) return;
 
         try {
-            const res = await fetch(`http://127.0.0.1:8000/usuarios/${formData.id}`);
+            const res = await fetch(`http://127.0.0.1:8000/usuarios/${formData.nui}`);
             const data = await res.json();
 
             if (data !== "F") {
@@ -50,11 +54,10 @@ function UpdateUser() {
                     sedeOpera: data.sedeOpera?.toString() || "",
                 });
             } else {
-                setError("No se encontró un usuario con ese ID");
+                setError("No user was found with that ID number");
             }
         } catch (error) {
-            console.error("Error al obtener usuario:", error);
-            alert("Error al conectar con el servidor");
+            console.error("Error getting user:", error);
         }
     };
 
@@ -69,11 +72,11 @@ function UpdateUser() {
         setError("");
 
         if (formData.nuevaContraseña !== formData.confirmarContraseña) {
-            setError("Las contraseñas no coinciden");
+            setError("Passwords do not match");
             return;
         }
         try {
-            const response = await fetch(`http://127.0.0.1:8000/usuarios/${formData.id}`, {
+            const response = await fetch(`http://127.0.0.1:8000/usuarios/actualizar/${formData.nui}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -88,32 +91,33 @@ function UpdateUser() {
             const result = await response.json();
 
             if (result.status === "OK") {
-                setSuccess("Usuario actualizado exitosamente");
+                setSuccess("User updated correctly");
                 setFormData({
-                    id: "",
+                    nui: "",
                     estadoUsuario: "",
                     cargoDesempeña: "",
                     sedeOpera: "",
                     nuevaContraseña: "",
                     confirmarContraseña: "",
                 });
+
+                onUsuario();
             } else {
-                setError("Error al actualizar el usuario");
+                setError("Error updating user");
             }
         } catch (error) {
-            console.error("Error en la solicitud:", error);
-            alert("No se pudo conectar con el servidor");
+            console.error("Error in the request:", error);
         }
     };
 
     const handleClean = () => {
         setFormData({
-            tipoDocumento: "",
             nui: "",
             nombresApellidos: "",
             usuario: "",
             contraseña: "",
             cargoDesempeña: "",
+            estadoUsuario: "",
             sedeOpera: "",
         })
     }
@@ -131,12 +135,12 @@ function UpdateUser() {
                     <div className="form-row">
                         <div>
                             <label>ID Number</label>
-                            <input type="number" name="id" value={formData.id} onChange={handleChange} onBlur={handleIdBlur} required />
+                            <input type="number" name="nui" value={formData.nui} onChange={handleChange} onBlur={handleIdBlur} required />
                         </div>
                         <div>
                             <label>Status</label>
                             <select name="estadoUsuario" value={formData.estadoUsuario} onChange={handleChange} required>
-                                <option value="" disabled selected hidden>Select Status</option>
+                                <option value="" disabled hidden>Select Status</option>
                                 <option value={1}>Active</option>
                                 <option value={0}>Suspended</option>
                             </select>
@@ -146,19 +150,21 @@ function UpdateUser() {
                         <div>
                             <label>Role</label>
                             <select name="cargoDesempeña" value={formData.cargoDesempeña} onChange={handleChange} required>
-                                <option value="" disabled selected hidden>Select Role</option>
-                                <option value={3}>Administrator</option>
-                                <option value={2}>Cashier</option>
-                                <option value={1}>Waiter</option>
+                                <option value="" disabled hidden>Select Role</option>
+                                {roles.map((rol) => (
+                                <option key={rol.id} value={rol.id}>
+                                    {rol.cargo}
+                                </option>
+                            ))}
                             </select>
                         </div>
                         <div>
                             <label>Branch</label>
                             <select name="sedeOpera" value={formData.sedeOpera} onChange={handleChange} required>
-                                <option value="" disabled selected hidden>Select Branch</option>
+                                <option value="" disabled hidden>Select Branch</option>
                                 {sedes.map((sede) => (
                                     <option key={sede.id} value={sede.id}>
-                                        {sede.nombreSucursal}
+                                        {sede.nombre}
                                     </option>
                                 ))}
                             </select>
@@ -169,8 +175,7 @@ function UpdateUser() {
                             <label>New Password</label>
                             <input type="password" name="nuevaContraseña"
                                 pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{8,12}$"
-                                title="Debe tener entre 8 y 12 caracteres, al menos una mayúscula, una minúscula, 
-                                    un número y un carácter especial, sin espacios."
+                                title="Debe tener entre 8 y 12 caracteres, al menos una mayúscula, una minúscula, un número y un carácter especial, sin espacios."
                                 value={formData.nuevaContraseña} onChange={handleChange} placeholder="**********" />
                         </div>
                         <div>
