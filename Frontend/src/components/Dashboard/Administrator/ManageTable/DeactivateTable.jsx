@@ -106,7 +106,7 @@ function DeactivateTable({onMesa}) {
                 </div>
                 <div className="form-row">
                     <div className="button-row">
-                        <button type="submit" className="save-btn">Save Changes</button>
+                        <button type="submit" className="save-btn">Save</button>
                         <button type="button" className="cancel-btn" onClick={handleClean}>Cancel</button>
                     </div>
                 </div>

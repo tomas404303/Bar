@@ -68,7 +68,7 @@ function ManageLocations() {
                         </button>
                         <button
                             className={`tab-btn ${activateTab === "update" ? "active" : ""}`}
-                            onClick={() => setActivateTab("update")}> Update Location
+                            onClick={() => setActivateTab("update")}> Change Status
                         </button>
                     </div>
                 </section>

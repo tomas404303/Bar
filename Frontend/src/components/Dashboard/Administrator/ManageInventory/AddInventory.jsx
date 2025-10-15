@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Select from "react-select";
 
 function AddInventory({ onProducto }) {
     const [formData, setFormData] = useState({
@@ -97,6 +98,19 @@ function AddInventory({ onProducto }) {
         setError("");
     };
 
+    const options = sedes.map((sede) => ({
+        value: sede.id,
+        label: sede.nombre,
+    }));
+
+    const customStyles = {
+    menuList: (base) => ({
+      ...base,
+      maxHeight: 150,
+      overflowY: "auto",
+    }),
+  };
+
     return (
         <section className="section">
             <h2 className="title">Add Product</h2>
@@ -104,21 +118,21 @@ function AddInventory({ onProducto }) {
                 <div className="form-row">
                     <div>
                         <label>Code</label>
-                        <input type="text" pattern="^[A-Za-z0-9]{4}$" 
-                        title="Enter 4 characters: letters or numbers, no spaces."
-                        name="codigoProducto" value={formData.codigoProducto} onChange={handleChange} required/>
+                        <input type="text" pattern="^[A-Za-z0-9]{4}$"
+                            title="Enter 4 characters: letters or numbers, no spaces."
+                            name="codigoProducto" value={formData.codigoProducto} onChange={handleChange} required />
                     </div>
                     <div>
                         <label>Name</label>
                         <input type="text" name="nombreProducto" value={formData.nombreProducto}
-                        onChange={handleChange} required/>
+                            onChange={handleChange} required />
                     </div>
                 </div>
                 <div className="form-row">
                     <div>
                         <label>Category</label>
                         <input type="text" name="categoria" value={formData.categoria}
-                        onChange={handleChange} required/>
+                            onChange={handleChange} required />
                     </div>
                     <div>
                         <label>Branch</label>
@@ -136,13 +150,13 @@ function AddInventory({ onProducto }) {
                 <div className="form-row">
                     <div>
                         <label>Cost</label>
-                        <input type="text" name="costo" value={formData.costo}
-                        onChange={handleChange} required/>
+                        <input type="number" name="costo" value={formData.costo}
+                            onChange={handleChange} required />
                     </div>
                     <div>
                         <label>Sale Price</label>
-                        <input type="text" name="precioVenta" value={formData.precioVenta}
-                        onChange={handleChange} required/>
+                        <input type="number" name="precioVenta" value={formData.precioVenta}
+                            onChange={handleChange} required />
                     </div>
                 </div>
 

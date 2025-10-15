@@ -175,7 +175,7 @@ function UpdateUser({onUsuario}) {
                             <label>New Password</label>
                             <input type="password" name="nuevaContraseña"
                                 pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{8,12}$"
-                                title="Debe tener entre 8 y 12 caracteres, al menos una mayúscula, una minúscula, un número y un carácter especial, sin espacios."
+                                title="Must be between 8 and 12 characters, at least one uppercase letter, one lowercase letter, one number, and one special character, with no spaces"
                                 value={formData.nuevaContraseña} onChange={handleChange} placeholder="**********" />
                         </div>
                         <div>
@@ -184,7 +184,7 @@ function UpdateUser({onUsuario}) {
                         </div>
                     </div>
                     <div className="button-row">
-                        <button type="submit" className="save-btn">Save Changes</button>
+                        <button type="submit" className="save-btn">Save</button>
                         <button type="button" className="cancel-btn" onClick={handleClean}>Cancel</button>
                     </div>
                 </form>

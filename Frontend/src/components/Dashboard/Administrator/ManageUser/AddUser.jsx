@@ -72,7 +72,7 @@ function AddUser({onUsuario}) {
             const result = await response.json();
 
             if (result.status === "OK") {
-                setSuccess("User created successfully");
+                setSuccess("User created correctly");
                 setFormData({
                     tipoDocumento: "",
                     nui: "",
@@ -130,7 +130,7 @@ function AddUser({onUsuario}) {
                         <label>ID Number</label>
                         <input type="text" maxLength="10" pattern="\d{10}"
                             onInput={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
-                            title="Debe contener exactamente 10 números y sin espacios"
+                            title="Must contain exactly 10 digits and no spaces"
                             name="nui" value={formData.nui} onChange={handleChange} required />
                     </div>
                 </div>
@@ -139,7 +139,7 @@ function AddUser({onUsuario}) {
                     <div>
                         <label>Full Name</label>
                         <input type="text" pattern="[A-Za-záéíóúÁÉÍÓÚñÑ\s]+"
-                            title="Debe contener solo letras" name="nombresApellidos"
+                            title="Must contain only letters" name="nombresApellidos"
                             value={formData.nombresApellidos} onChange={handleChange} required />
                     </div>
                 </div>
@@ -148,14 +148,14 @@ function AddUser({onUsuario}) {
                     <div>
                         <label>Username</label>
                         <input type="text" pattern="[A-Za-záéíóúÁÉÍÓÚñÑ]+"
-                            title="Debe contener solo letras y sin espacios" name="usuario"
+                            title="Must contain only letters and no spaces" name="usuario"
                             value={formData.usuario} onChange={handleChange} required />
                     </div>
                     <div>
                         <label>Password</label>
                         <input type="password" name="contraseña" 
                         pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{8,12}$" 
-                        title="Debe tener entre 8 y 12 caracteres, al menos una mayúscula, una minúscula, un número y un carácter especial, sin espacios"  value={formData.contraseña}
+                        title="Must be between 8 and 12 characters, at least one uppercase letter, one lowercase letter, one number, and one special character, with no spaces"  value={formData.contraseña}
                             onChange={handleChange} placeholder="**********" required />
                     </div>
                 </div>
@@ -188,7 +188,7 @@ function AddUser({onUsuario}) {
                 </div>
 
                 <div className="button-row">
-                    <button type="submit" className="save-btn">Save User</button>
+                    <button type="submit" className="save-btn">Save</button>
                     <button type="button" className="cancel-btn" onClick={handleClean}>Cancel</button>
                 </div>
             </form>

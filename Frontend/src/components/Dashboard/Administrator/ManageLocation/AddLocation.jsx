@@ -35,7 +35,7 @@ function AddLocation({onSede}) {
             const result = await response.json();
 
             if (result.status === "OK") {
-                setSuccess("Branch created successfully");
+                setSuccess("Branch created correctly");
                 setFormData({
                     nombre: "",
                     direccion: "",
@@ -84,7 +84,7 @@ function AddLocation({onSede}) {
                 </div>
 
                 <div className="button-row">
-                    <button type="submit" className="save-btn">Save Location</button>
+                    <button type="submit" className="save-btn">Save</button>
                     <button type="button" className="cancel-btn" onClick={handleClean}>Cancel</button>
                 </div>
             </form>

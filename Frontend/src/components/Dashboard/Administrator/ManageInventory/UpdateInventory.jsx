@@ -38,12 +38,11 @@ function UpdateInventory({ onProducto }) {
             try {
                 const response = await fetch(
                     `http://127.0.0.1:8000/productos/${formData.codigoProducto}/${formData.sede}`);
-                if (!response.ok) throw new Error("Error en la solicitud");
+                if (!response.ok) throw new Error("Error in the request");
 
                 const data = await response.json();
 
                 if (data !== "F") {
-                    // Llenar los campos con los datos recibidos
                     setFormData((prev) => ({
                         ...prev,
                         nombreProducto: data.nombreProducto || "",
@@ -53,10 +52,10 @@ function UpdateInventory({ onProducto }) {
                         estado: parseInt(data.estado) || 0,
                     }));
                 } else {
-                    console.warn("❌ No se encontró el producto");
+                    setError("No product with that code and branch");
                 }
             } catch (error) {
-                console.error("Error al obtener producto:", error);
+                console.error("Error getting product:", error);
             }
         }
     }
@@ -163,12 +162,12 @@ function UpdateInventory({ onProducto }) {
                 <div className="form-row">
                     <div>
                         <label>Cost</label>
-                        <input type="text" name="costo" value={formData.costo}
+                        <input type="number" name="costo" value={formData.costo}
                             onChange={handleChange} required />
                     </div>
                     <div>
                         <label>Sale price</label>
-                        <input type="text" name="precioVenta" value={formData.precioVenta}
+                        <input type="number" name="precioVenta" value={formData.precioVenta}
                             onChange={handleChange} required />
                     </div>
                 </div>

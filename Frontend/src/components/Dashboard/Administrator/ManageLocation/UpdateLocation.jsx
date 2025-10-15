@@ -83,7 +83,7 @@ function UpdateLocation({onSede}) {
 
                 onSede();
             } else {
-                setError("Error updating the branch");
+                setError("Error updating branch");
             }
         } catch (error) {
             console.error("Error in the request:", error);
@@ -104,7 +104,7 @@ function UpdateLocation({onSede}) {
 
     return (
         <section className="section">
-            <h2 className="title">Update Location</h2>
+            <h2 className="title">Change Status</h2>
             <form className="form" onSubmit={handleSubmit}>
                 <div className="form-row">
                     <div>
@@ -129,7 +129,7 @@ function UpdateLocation({onSede}) {
                 </div>
 
                 <div className="button-row">
-                    <button type="submit" className="save-btn">Save Location</button>
+                    <button type="submit" className="save-btn">Save</button>
                     <button type="button" className="cancel-btn" onClick={handleClean}>Cancel</button>
                 </div>
             </form>
