@@ -42,26 +42,31 @@ function AddUser({onUsuario}) {
     }, []);
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    };
+            const { name, value } = e.target;
+            setFormData((prev) => ({ ...prev, [name]: value }));
+        };
 
-    const handleSubmit = async (e) => {
+        const handleSubmit = async (e) => {
         e.preventDefault();
         setSuccess("");
         setError("");
 
         try {
+            const checkRes = await fetch(`http://localhost:8000/usuarios/${formData.nui}`);
+            const existing = await checkRes.json();
+            if (existing !== "F") {
+                setError("A user with this NUI already exists");
+                return;
+            }
+
             const response = await fetch("http://localhost:8000/usuarios/", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     nui: formData.nui,
                     tipoDocumento: formData.tipoDocumento,
                     nombresApellidos: formData.nombresApellidos,
-                    estadoUsuario: 1, // puedes ajustar esto
+                    estadoUsuario: 1,
                     cargoDesempeña: formData.cargoDesempeña,
                     sedeOpera: formData.sedeOpera,
                     usuario: formData.usuario,
@@ -85,12 +90,14 @@ function AddUser({onUsuario}) {
 
                 onUsuario();
             } else {
-                setError("Error creating user");
+                setError(result.reason || "Error creating user");
             }
         } catch (error) {
             console.error("Error:", error);
+            setError("Unexpected error occurred");
         }
     };
+
 
     const handleClean = () => {
         setFormData({

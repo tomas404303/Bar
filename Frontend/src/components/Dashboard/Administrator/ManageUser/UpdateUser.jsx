@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-function UpdateUser({onUsuario}) {
+function UpdateUser({ onUsuario }) {
     const [formData, setFormData] = useState({
         nui: "",
         estadoUsuario: "",
@@ -15,7 +15,6 @@ function UpdateUser({onUsuario}) {
     const [sedes, setSedes] = useState([]);
     const [roles, setRoles] = useState([]);
 
-    // Cargar sedes al select
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -23,33 +22,24 @@ function UpdateUser({onUsuario}) {
                     fetch("http://localhost:8000/mesas/sedes"),
                     fetch("http://localhost:8000/usuarios/roles/listar")
                 ]);
-
-                const dataSedes = await resSedes.json();
-                const dataRoles = await resRoles.json();
-
-                setSedes(dataSedes);
-                setRoles(dataRoles);
+                setSedes(await resSedes.json());
+                setRoles(await resRoles.json());
             } catch (error) {
                 console.error("Error loading data:", error);
             }
         };
-
         fetchData();
     }, []);
 
-    // Buscar usuario cuando se sale del campo ID
     const handleIdBlur = async () => {
         if (!formData.nui) return;
-
         try {
             const res = await fetch(`http://127.0.0.1:8000/usuarios/${formData.nui}`);
             const data = await res.json();
-
             if (data !== "F") {
-                //  Llenar los campos con los valores devueltos
                 setFormData({
                     ...formData,
-                    estadoUsuario: data.estadoUsuario?.toString() || "",
+                    estadoUsuario: data.estadoUsuario ? "1" : "0",
                     cargoDesempeña: data.cargoDesempeña?.toString() || "",
                     sedeOpera: data.sedeOpera?.toString() || "",
                 });
@@ -75,17 +65,20 @@ function UpdateUser({onUsuario}) {
             setError("Passwords do not match");
             return;
         }
+
+        const payload = {
+            estadoUsuario: formData.estadoUsuario ? parseInt(formData.estadoUsuario) : null,
+            cargoDesempeña: formData.cargoDesempeña ? parseInt(formData.cargoDesempeña) : null,
+            sedeOpera: formData.sedeOpera ? parseInt(formData.sedeOpera) : null,
+            nuevaContraseña: formData.nuevaContraseña || null,
+            confirmarContraseña: formData.confirmarContraseña || null,
+        };
+
         try {
             const response = await fetch(`http://127.0.0.1:8000/usuarios/actualizar/${formData.nui}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    estadoUsuario: formData.estadoUsuario,
-                    cargoDesempeña: formData.cargoDesempeña,
-                    sedeOpera: formData.sedeOpera,
-                    nuevaContraseña: formData.nuevaContraseña,
-                    confirmarContraseña: formData.confirmarContraseña,
-                }),
+                body: JSON.stringify(payload),
             });
 
             const result = await response.json();
@@ -100,27 +93,26 @@ function UpdateUser({onUsuario}) {
                     nuevaContraseña: "",
                     confirmarContraseña: "",
                 });
-
                 onUsuario();
             } else {
                 setError("Error updating user");
             }
         } catch (error) {
             console.error("Error in the request:", error);
+            setError("Error updating user");
         }
     };
 
     const handleClean = () => {
         setFormData({
             nui: "",
-            nombresApellidos: "",
-            usuario: "",
-            contraseña: "",
-            cargoDesempeña: "",
             estadoUsuario: "",
+            cargoDesempeña: "",
             sedeOpera: "",
-        })
-    }
+            nuevaContraseña: "",
+            confirmarContraseña: "",
+        });
+    };
 
     const handleCloseModal = () => {
         setSuccess("");
@@ -129,9 +121,9 @@ function UpdateUser({onUsuario}) {
 
     return (
         <div>
-            <section className="section" >
+            <section className="section">
                 <h2 className="title">Update User</h2>
-                <p><b>Note: </b>just fill in the data to be changed.</p>
+                <p><b>Note:</b> just fill in the data to be changed.</p>
                 <form className="form" onSubmit={handleSubmit}>
                     <div className="form-row">
                         <div>
@@ -140,33 +132,34 @@ function UpdateUser({onUsuario}) {
                         </div>
                         <div>
                             <label>Status</label>
-                            <select name="estadoUsuario" value={formData.estadoUsuario} onChange={handleChange} required>
+                            <select
+                                name="estadoUsuario"
+                                value={formData.estadoUsuario?.toString() || ""}
+                                onChange={(e) => setFormData({ ...formData, estadoUsuario: e.target.value })}
+                                required
+                            >
                                 <option value="" disabled hidden>Select Status</option>
-                                <option value={1}>Active</option>
-                                <option value={0}>Suspended</option>
+                                <option value="1">Active</option>
+                                <option value="0">Suspended</option>
                             </select>
                         </div>
                     </div>
                     <div className="form-row">
                         <div>
                             <label>Role</label>
-                            <select name="cargoDesempeña" value={formData.cargoDesempeña} onChange={handleChange} required>
+                            <select name="cargoDesempeña" value={formData.cargoDesempeña} onChange={(e) => setFormData({ ...formData, cargoDesempeña: e.target.value })} required>
                                 <option value="" disabled hidden>Select Role</option>
                                 {roles.map((rol) => (
-                                <option key={rol.id} value={rol.id}>
-                                    {rol.cargo}
-                                </option>
-                            ))}
+                                    <option key={rol.id} value={rol.id}>{rol.cargo}</option>
+                                ))}
                             </select>
                         </div>
                         <div>
                             <label>Branch</label>
-                            <select name="sedeOpera" value={formData.sedeOpera} onChange={handleChange} required>
+                            <select name="sedeOpera" value={formData.sedeOpera} onChange={(e) => setFormData({ ...formData, sedeOpera: e.target.value })} required>
                                 <option value="" disabled hidden>Select Branch</option>
                                 {sedes.map((sede) => (
-                                    <option key={sede.id} value={sede.id}>
-                                        {sede.nombre}
-                                    </option>
+                                    <option key={sede.id} value={sede.id}>{sede.nombre}</option>
                                 ))}
                             </select>
                         </div>
@@ -189,7 +182,7 @@ function UpdateUser({onUsuario}) {
                         <button type="button" className="cancel-btn" onClick={handleClean}>Cancel</button>
                     </div>
                 </form>
-                {/* Modal de Success */}
+
                 {success && (
                     <div className="modal-success">
                         <div className="modal-content">
@@ -198,18 +191,18 @@ function UpdateUser({onUsuario}) {
                         </div>
                     </div>
                 )}
-                {/* Modal de error */}
+
                 {error && (
                     <div className="modal-error">
                         <div className="modal-content">
                             <p>{error}</p>
-                            <button onClick={handleCloseModal} >OK</button>
+                            <button onClick={handleCloseModal}>OK</button>
                         </div>
                     </div>
                 )}
             </section>
         </div>
-    )
+    );
 }
 
-export default UpdateUser
+export default UpdateUser;

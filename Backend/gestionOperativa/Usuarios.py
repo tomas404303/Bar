@@ -49,6 +49,11 @@ def crear_usuario(data: UsuarioBase):
         from Database import execute_query
         hashed = encriptar_contraseña(data.contraseña)
 
+        query_check = "SELECT id FROM usuario WHERE nui = ?"
+        cursor.execute(query_check, (data.nui,))
+        if cursor.fetchone():
+            return {"status": "F", "reason": "A user with this NUI already exists"}
+
         query = """
             INSERT INTO usuario (nui, tipoDocumento, nombres_apellidos, estadoUsuario,
             cargoDesempeña, sedeOpera, usuario, contraseña)
@@ -111,17 +116,17 @@ def actualizar_usuario(nui: str, data: UpdateUsuario):
 
         if data.estadoUsuario is not None:
             fields.append("estadoUsuario = ?")
-            values.append(data.estadoUsuario)
+            values.append(int(data.estadoUsuario))
 
         if data.cargoDesempeña is not None:
             fields.append("cargoDesempeña = ?")
-            values.append(data.cargoDesempeña)
+            values.append(int(data.cargoDesempeña))
 
         if data.sedeOpera is not None:
             fields.append("sedeOpera = ?")
-            values.append(data.sedeOpera)
+            values.append(int(data.sedeOpera))
 
-        if data.nuevaContraseña and data.confirmarContraseña:
+        if data.nuevaContraseña or data.confirmarContraseña:
             if data.nuevaContraseña == data.confirmarContraseña:
                 hashed = encriptar_contraseña(data.nuevaContraseña)
                 fields.append("contraseña = ?")
@@ -129,6 +134,7 @@ def actualizar_usuario(nui: str, data: UpdateUsuario):
             else:
                 db.close()
                 return "F"
+
 
         if not fields:
             db.close()
