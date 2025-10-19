@@ -1,0 +1,53 @@
+# ====================================
+# FASTAPI / PYTHON PROJECT .GITIGNORE
+# ====================================
+
+# --- Archivos y carpetas de Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Entorno virtual ---
+.venv/
+venv/
+ENV/
+env/
+
+# --- Archivos de configuración sensibles ---
+.env
+*.env
+
+# --- Archivos temporales o de sistema ---
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+.DS_Store
+Thumbs.db
+
+# --- Archivos de test / cache ---
+.coverage
+.tox/
+.nox/
+.pytest_cache/
+.cache/
+
+# --- Archivos de IDE (Visual Studio Code, PyCharm, etc.) ---
+.vscode/
+.idea/
+
+# --- Archivos de despliegue ---
+*.egg-info/
+build/
+dist/
+
+# --- Archivos específicos de FastAPI / Uvicorn ---
+*.pid
+*.sock
+
+# Si usas Docker
+docker-compose.override.yml
+Dockerfile
