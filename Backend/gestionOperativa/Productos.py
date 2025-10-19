@@ -13,15 +13,14 @@ class CrearProducto(BaseModel):
     categoria: str
     costo: float
     precioVenta: float
-    estado: int
 
 
 class ActualizarProducto(BaseModel):
     id: int
     nombreProducto: str | None = None
-    estado: int | None = None
+    categoriaProducto: str | None = None
     costo: float | None = None
-    precioVenta: float | None = None
+    valorVenta: float | None = None
 
 
 def generar_nuevo_id(cursor):
@@ -30,7 +29,6 @@ def generar_nuevo_id(cursor):
     nuevo_id = cursor.fetchone()[0]
     return nuevo_id
 
-
 @router.get("/")
 def listar_productos():
     db = connect_to_sqlserver()
@@ -38,10 +36,11 @@ def listar_productos():
     try:
         query = """
             SELECT 
-                p.id, p.nombreProducto, p.categoria,
+                p.id,
+                p.nombre, 
+                p.categoria,
                 FORMAT(p.costo, 'N0', 'es-ES'), 
-                FORMAT(p.precioVenta, 'N0', 'es-ES'), 
-                p.estado
+                FORMAT(p.valorVenta, 'N0', 'es-ES') 
             FROM productos p
         """
         cursor.execute(query)
@@ -51,13 +50,12 @@ def listar_productos():
             return []
 
         resultado = [
-            {
+            {   
                 "id": r[0],
-                "nombreProducto": r[1],
+                "nombre": r[1],
                 "categoria": r[2],
                 "costo": r[3],
-                "precioVenta": r[4],
-                "estado": r[5],
+                "valorVenta": r[4]
             }
             for r in rows
         ]
@@ -77,16 +75,15 @@ def agregar_producto(data: CrearProducto):
         nuevo_id = generar_nuevo_id(cursor)
 
         query_insert = """
-            INSERT INTO productos (id, nombreProducto, categoria, costo, precioVenta, estado)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO productos (id, nombre, categoria, costo, valorVenta)
+            VALUES (?, ?, ?, ?, ?)
         """
         cursor.execute(query_insert, (
             nuevo_id,
             data.nombreProducto,
             data.categoria,
             data.costo,
-            data.precioVenta,
-            data.estado
+            data.precioVenta
         ))
         db.commit()
         return {"status": "OK", "idGenerado": nuevo_id}
@@ -134,20 +131,20 @@ def actualizar_producto(data: ActualizarProducto):
         values = []
 
         if data.nombreProducto is not None:
-            fields.append("nombreProducto = ?")
+            fields.append("nombre = ?")
             values.append(data.nombreProducto)
 
-        if data.estado is not None:
-            fields.append("estado = ?")
-            values.append(data.estado)
+        if data.categoriaProducto is not None:
+            fields.append("categoria = ?")
+            values.append(data.categoriaProducto)
 
         if data.costo is not None:
             fields.append("costo = ?")
             values.append(data.costo)
 
-        if data.precioVenta is not None:
-            fields.append("precioVenta = ?")
-            values.append(data.precioVenta)
+        if data.valorVenta is not None:
+            fields.append("valorVenta = ?")
+            values.append(data.valorVenta)
 
         if not fields:
             db.close()

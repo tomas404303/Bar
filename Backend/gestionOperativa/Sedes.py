@@ -25,15 +25,16 @@ def crear_sede(data: CrearSede):
     db = connect_to_sqlserver()
     cursor = db.cursor()
     try:
+        estado_bit = 1 if data.estado else 0
         query = """
             INSERT INTO sucursales (nombre, direccion, estado)
             VALUES (?, ?, ?)
         """
-        cursor.execute(query, (data.nombre, data.direccion, data.estado))
+        cursor.execute(query, (data.nombre, data.direccion, estado_bit))
         db.commit()
         return {"status":"OK"}
     except pyodbc.Error as e:
-        print("❌ Error creando sede:", e)
+        print("Error creando sede:", e)
         return "F"
     finally:
         db.close()

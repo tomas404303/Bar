@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from pydantic import BaseModel
 from Database import connect_to_sqlserver
 import pyodbc
@@ -13,6 +13,46 @@ class InventarioItem(BaseModel):
     idProducto: int
     cantidad: int
 
+@router.get("/")
+def listar_inventario(cargo: str = Query(...), sede: str = Query(None)):
+    db = connect_to_sqlserver()
+    cursor = db.cursor()
+    try:
+        if cargo == "Administrator":
+            query = """
+                SELECT i.idProducto, p.nombre, i.idSucursal, s.nombre as nombreSede, i.cantidad
+                FROM inventario i
+                JOIN productos p ON i.idProducto = p.id
+                JOIN sucursales s ON i.idSucursal = s.id
+            """
+            cursor.execute(query)
+        else:
+            query = """
+                SELECT i.idProducto, p.nombre, i.idSucursal, s.nombre as nombreSede, i.cantidad
+                FROM inventario i
+                JOIN productos p ON i.idProducto = p.id
+                JOIN sucursales s ON i.idSucursal = s.id
+                WHERE s.nombre = ?
+            """
+            cursor.execute(query, (sede,))
+
+        rows = cursor.fetchall()
+        result = []
+        for r in rows:
+            result.append({
+                "idProducto": r[0],
+                "nombre": r[1],
+                "idSucursal": r[2],
+                "sede": r[3],
+                "cantidad": r[4]
+            })
+
+        return result
+
+    except pyodbc.Error as e:
+        return {"status": "F", "error": str(e)}
+    finally:
+        db.close()
 
 @router.post("/")
 def agregar_o_actualizar_inventario(data: InventarioItem):
@@ -62,5 +102,19 @@ def agregar_o_actualizar_inventario(data: InventarioItem):
     except pyodbc.Error as e:
         return {"status": "F", "error": str(e)}
 
+    finally:
+        db.close()
+
+@router.get("/sedes")
+def listar_sedes():
+    db = connect_to_sqlserver()
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT id, nombre FROM sucursales WHERE estado = 1")
+        rows = cursor.fetchall()
+        result = [{"id": r[0], "nombre": r[1]} for r in rows]
+        return result
+    except pyodbc.Error as e:
+        return {"status": "F", "error": str(e)}
     finally:
         db.close()
