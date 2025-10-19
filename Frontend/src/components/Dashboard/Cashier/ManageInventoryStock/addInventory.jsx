@@ -1,9 +1,13 @@
 import { useState, useEffect } from "react";
 
 function AddStock({ onProducto }) {
+    const usuario = localStorage.getItem("usuario");
+    const cargo = localStorage.getItem("cargo");
+    const sedeUsuario = localStorage.getItem("sede");
+
     const [formData, setFormData] = useState({
         codigoProducto: "",
-        sede: "",
+        sede: cargo === "Administrator" ? "" : sedeUsuario,
         cantidad: ""
     });
 
@@ -12,17 +16,19 @@ function AddStock({ onProducto }) {
     const [sedes, setSedes] = useState([]);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const resSedes = await fetch("http://localhost:8000/mesas/sedes");
-                const dataSedes = await resSedes.json();
-                setSedes(dataSedes);
-            } catch (err) {
-                console.error("Error loading branches:", err);
-            }
-        };
-        fetchData();
-    }, []);
+        if (cargo === "Administrator") {
+            const fetchSedes = async () => {
+                try {
+                    const res = await fetch("http://localhost:8000/inventario/sedes");
+                    const data = await res.json();
+                    setSedes(data);
+                } catch (err) {
+                    console.error("Error loading branches:", err);
+                }
+            };
+            fetchSedes();
+        }
+    }, [cargo]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -51,7 +57,7 @@ function AddStock({ onProducto }) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     idSucursal: parseInt(formData.sede),
-                    idProducto: parseInt(formData.codigoProducto),
+                    idProducto: formData.codigoProducto,
                     cantidad: cantidadNum
                 }),
             });
@@ -59,9 +65,12 @@ function AddStock({ onProducto }) {
             const data = await response.json();
 
             if (data.status === "OK") {
-                const msg = `Inventory update successfully.`;
-                setSuccess(msg);
-                setFormData({ codigoProducto: "", sede: "", cantidad: "" });
+                setSuccess(`Inventory updated successfully (${data.accion})`);
+                setFormData({
+                    codigoProducto: "",
+                    sede: cargo === "Administrator" ? "" : sedeUsuario,
+                    cantidad: ""
+                });
                 if (onProducto) onProducto();
             } else {
                 setError(data.reason || data.error || "Error updating inventory");
@@ -73,7 +82,11 @@ function AddStock({ onProducto }) {
     };
 
     const handleClean = () => {
-        setFormData({ codigoProducto: "", sede: "", cantidad: "" });
+        setFormData({
+            codigoProducto: "",
+            sede: cargo === "Administrator" ? "" : sedeUsuario,
+            cantidad: ""
+        });
         setError("");
         setSuccess("");
     };
@@ -100,20 +113,31 @@ function AddStock({ onProducto }) {
                     </div>
                 </div>
                 <div className="form-row">
-                    <div>
-                        <label>Branch</label>
-                        <select
-                            name="sede"
-                            value={formData.sede}
-                            onChange={handleChange}
-                            required
-                        >
-                            <option value="" disabled hidden>Select Branch</option>
-                            {sedes.map((s) => (
-                                <option key={s.id} value={s.id}>{s.nombre}</option>
-                            ))}
-                        </select>
-                    </div>
+                    {cargo === "Administrator" ? (
+                        <div>
+                            <label>Branch</label>
+                            <select
+                                name="sede"
+                                value={formData.sede}
+                                onChange={handleChange}
+                                required
+                            >
+                                <option value="" disabled hidden>Select Branch</option>
+                                {sedes.map((s) => (
+                                    <option key={s.id} value={s.id}>{s.nombre}</option>
+                                ))}
+                            </select>
+                        </div>
+                    ) : (
+                        <div>
+                            <label>Branch</label>
+                            <input
+                                type="text"
+                                value={sedeUsuario}
+                                disabled
+                            />
+                        </div>
+                    )}
                     <div>
                         <label>Quantity</label>
                         <input
@@ -132,7 +156,6 @@ function AddStock({ onProducto }) {
                 </div>
             </form>
 
-            {/* Modal de Success */}
             {success && (
                 <div className="modal-success">
                     <div className="modal-content">
@@ -142,7 +165,6 @@ function AddStock({ onProducto }) {
                 </div>
             )}
 
-            {/* Modal de Error */}
             {error && (
                 <div className="modal-error">
                     <div className="modal-content">
@@ -156,5 +178,3 @@ function AddStock({ onProducto }) {
 }
 
 export default AddStock;
-
-
