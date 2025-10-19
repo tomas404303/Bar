@@ -61,6 +61,7 @@ function ManageUsers() {
                                         <td><span className={`status ${usuario.estadoUsuario === 1 ? "active" : "suspended"}`}>
                                             {usuario.estadoUsuario === 1 ? "Active" : "Suspended"}
                                         </span></td>
+
                                     </tr>
                                 ))}
                             </tbody>

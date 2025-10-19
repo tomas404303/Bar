@@ -7,7 +7,7 @@ from Autenticacion.Login import router as login_router
 from gestionOperativa.Usuarios import router as usuario_router
 from gestionOperativa.Mesas import router as mesas_router
 from gestionOperativa.Sedes import router as sedes_router
-from gestionOperativa.Sedes import router as productos_router
+from gestionOperativa.Productos import router as productos_router
 from gestionOperativa.Inventario import router as inventario_router
 
 load_dotenv(dotenv_path='.venv/.env')

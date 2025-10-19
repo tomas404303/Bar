@@ -207,7 +207,7 @@ def listar_usuarios():
                 "usuario": r[3],
                 "cargoDesempeña": r[4],
                 "sedeOpera": r[5],
-                "estadoUsuario": r[6],
+                "estadoUsuario": int(r[6]),
                 "tipoDocumento": r[7]
             } for r in rows
             ]

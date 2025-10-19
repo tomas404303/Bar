@@ -48,7 +48,7 @@ def listar_productos():
         rows = cursor.fetchall()
 
         if not rows:
-            return "F"
+            return []
 
         resultado = [
             {

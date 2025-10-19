@@ -46,7 +46,7 @@ def listar_mesas():
     try:
         query = """
         SELECT m.cantidad, s.nombre, s.id, s.estado FROM mesa m 
-        INNER JOIN sucursales s ON m.sucursales = s.id
+        INNER JOIN sucursales s ON m.sedeDefinido = s.id
         """
         cursor.execute(query)
         rows = cursor.fetchall()
@@ -85,7 +85,7 @@ def crear_mesas(data: CrearMesas):
             return {"status": "F", "reason": "No se pueden crear mesas en una sede inactiva"}
 
         # Verificar si ya existe una fila para esa sede
-        query_select = "SELECT cantidad FROM mesa WHERE sucursales = ?"
+        query_select = "SELECT cantidad FROM mesa WHERE sedeDefinido = ?"
         cursor.execute(query_select, (data.sede,))
         result = cursor.fetchone()
 
@@ -93,13 +93,13 @@ def crear_mesas(data: CrearMesas):
             cantidad_actual = result[0] or 0
             nueva_cantidad = cantidad_actual + data.cantidad
 
-            query_update = "UPDATE mesa SET cantidad = ? WHERE sucursales = ?"
+            query_update = "UPDATE mesa SET cantidad = ? WHERE sedeDefinido = ?"
             cursor.execute(query_update, (nueva_cantidad, data.sede))
             db.commit()
             return {"status": "OK"}
 
         else:
-            query_insert = "INSERT INTO mesa (cantidad, sucursales) VALUES (?, ?)"
+            query_insert = "INSERT INTO mesa (cantidad, sedeDefinido) VALUES (?, ?)"
             cursor.execute(query_insert, (data.cantidad, data.sede))
             db.commit()
             return {"status": "OK"}
@@ -118,7 +118,7 @@ def actualizar_mesas(data: ActualizarMesas):
     cursor = db.cursor()
 
     try:
-        query_select = "SELECT cantidad FROM mesa WHERE sucursales = ?"
+        query_select = "SELECT cantidad FROM mesa WHERE sedeDefinido = ?"
         cursor.execute(query_select, (data.sede,))
         result = cursor.fetchone()
 
@@ -131,7 +131,7 @@ def actualizar_mesas(data: ActualizarMesas):
         if nueva_cantidad < 0:
             return "F"
 
-        query_update = "UPDATE mesa SET cantidad = ? WHERE sucursales = ?"
+        query_update = "UPDATE mesa SET cantidad = ? WHERE sedeDefinido = ?"
         cursor.execute(query_update, (nueva_cantidad, data.sede))
         db.commit()
 
