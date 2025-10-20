@@ -41,28 +41,29 @@ function ManageInventory() {
                         <table className="table">
                             <thead>
                                 <tr>
-                                    <th>Code</th>
+                                    <th>Cod</th>
                                     <th>Name</th>
                                     <th>Category</th>
                                     <th>Cost</th>
                                     <th>Sale Price</th>
-                                    <th>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {productos.map((producto) => (
-                                    <tr key={producto.id}>
-                                        <td>{producto.codigoProducto}</td>
-                                        <td>{producto.nombreProducto}</td>
-                                        <td>{producto.categoria}</td>
-                                        <td>$ {producto.costo}</td>
-                                        <td>$ {producto.precioVenta}</td>
-                                        <td><span className={`status ${producto.estado === 1 ? "active" : "suspended"}`}>
-                                            {producto.estado === 1 ? "Active" : "Suspended"}
-                                        </span></td>
-                                    </tr>
-                                ))}
-                                
+                            {Array.isArray(productos) && productos.length > 0 ? (
+                                productos.map((producto) => (
+                                <tr key={producto.id}>
+                                    <td>{producto.id}</td>
+                                    <td>{producto.nombre}</td>
+                                    <td>{producto.categoria}</td>
+                                    <td>$ {producto.costo}</td>
+                                    <td>$ {producto.valorVenta}</td>
+                                </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                <td colSpan="6">No products found</td>
+                                </tr>
+                            )}
                             </tbody>
                         </table>
                     </div>

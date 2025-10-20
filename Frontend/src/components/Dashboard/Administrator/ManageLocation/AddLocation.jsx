@@ -39,7 +39,7 @@ function AddLocation({onSede}) {
                 setFormData({
                     nombre: "",
                     direccion: "",
-                    estado: "",
+                    estado: 1,
                 });
 
                 onSede();
@@ -55,7 +55,7 @@ function AddLocation({onSede}) {
         setFormData({
             nombre: "",
             direccion: "",
-            estado: "",
+            estado: 1,
         })
     }
 

@@ -3,11 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
-from Login import router as login_router
-from Usuarios import router as usuario_router
-from Mesas import router as mesas_router
-from Sedes import router as sedes_router 
-from Productos import router as productos_router 
+from Autenticacion.Login import router as login_router
+from gestionOperativa.Usuarios import router as usuario_router
+from gestionOperativa.Mesas import router as mesas_router
+from gestionOperativa.Sedes import router as sedes_router
+from gestionOperativa.Productos import router as productos_router
+from gestionOperativa.Inventario import router as inventario_router
 
 load_dotenv(dotenv_path='.venv/.env')
 
@@ -30,9 +31,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Agregar los routers
 app.include_router(login_router)
 app.include_router(usuario_router)
 app.include_router(mesas_router)
 app.include_router(sedes_router)
 app.include_router(productos_router)
+app.include_router(inventario_router)

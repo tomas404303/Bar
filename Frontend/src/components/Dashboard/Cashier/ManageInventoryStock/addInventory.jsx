@@ -1,28 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 function AddStock({ onProducto }) {
+    const usuario = localStorage.getItem("usuario");
+    const cargo = localStorage.getItem("cargo");
+    const sedeUsuario = localStorage.getItem("sede"); 
+
     const [formData, setFormData] = useState({
         codigoProducto: "",
-        sede: "",
+        sede: sedeUsuario,
         cantidad: ""
     });
 
     const [success, setSuccess] = useState("");
     const [error, setError] = useState("");
-    const [sedes, setSedes] = useState([]);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const resSedes = await fetch("http://localhost:8000/mesas/sedes");
-                const dataSedes = await resSedes.json();
-                setSedes(dataSedes);
-            } catch (err) {
-                console.error("Error loading branches:", err);
-            }
-        };
-        fetchData();
-    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -41,7 +31,7 @@ function AddStock({ onProducto }) {
         }
 
         if (!formData.codigoProducto || !formData.sede) {
-            setError("Please enter a product code and select a branch");
+            setError("Please enter a product code and branch");
             return;
         }
 
@@ -50,8 +40,8 @@ function AddStock({ onProducto }) {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    idSucursal: parseInt(formData.sede),
-                    idProducto: parseInt(formData.codigoProducto),
+                    idSucursal: formData.sede,
+                    idProducto: formData.codigoProducto,
                     cantidad: cantidadNum
                 }),
             });
@@ -59,9 +49,12 @@ function AddStock({ onProducto }) {
             const data = await response.json();
 
             if (data.status === "OK") {
-                const msg = `Inventory update successfully.`;
-                setSuccess(msg);
-                setFormData({ codigoProducto: "", sede: "", cantidad: "" });
+                setSuccess(`Inventory updated successfully (${data.accion})`);
+                setFormData({
+                    codigoProducto: "",
+                    sede: sedeUsuario,
+                    cantidad: ""
+                });
                 if (onProducto) onProducto();
             } else {
                 setError(data.reason || data.error || "Error updating inventory");
@@ -73,13 +66,13 @@ function AddStock({ onProducto }) {
     };
 
     const handleClean = () => {
-        setFormData({ codigoProducto: "", sede: "", cantidad: "" });
-        setError("");
+        setFormData({ codigoProducto: "", sede: sedeUsuario, cantidad: "" });
+        setError(""); 
         setSuccess("");
     };
 
     const handleCloseModal = () => {
-        setError("");
+        setError(""); 
         setSuccess("");
     };
 
@@ -88,43 +81,33 @@ function AddStock({ onProducto }) {
             <h2 className="title">Add Stock</h2>
             <form className="form" onSubmit={handleSubmit}>
                 <div className="form-row">
-                    <div>
-                        <label>Product Code</label>
-                        <input
-                            type="text"
-                            name="codigoProducto"
-                            value={formData.codigoProducto}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
+                    <label>Product Code</label>
+                    <input
+                        type="text"
+                        name="codigoProducto"
+                        value={formData.codigoProducto}
+                        onChange={handleChange}
+                        required
+                    />
                 </div>
                 <div className="form-row">
-                    <div>
-                        <label>Branch</label>
-                        <select
-                            name="sede"
-                            value={formData.sede}
-                            onChange={handleChange}
-                            required
-                        >
-                            <option value="" disabled hidden>Select Branch</option>
-                            {sedes.map((s) => (
-                                <option key={s.id} value={s.id}>{s.nombre}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label>Quantity</label>
-                        <input
-                            type="number"
-                            name="cantidad"
-                            value={formData.cantidad}
-                            onChange={handleChange}
-                            min="1"
-                            required
-                        />
-                    </div>
+                    <label>Branch</label>
+                    <input
+                        type="text"
+                        value={formData.sede}
+                        disabled
+                    />
+                </div>
+                <div className="form-row">
+                    <label>Quantity</label>
+                    <input
+                        type="number"
+                        name="cantidad"
+                        value={formData.cantidad}
+                        onChange={handleChange}
+                        min="1"
+                        required
+                    />
                 </div>
                 <div className="button-row">
                     <button type="submit" className="save-btn">Save</button>
@@ -156,5 +139,3 @@ function AddStock({ onProducto }) {
 }
 
 export default AddStock;
-
-

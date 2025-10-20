@@ -6,6 +6,7 @@ import ManageLocations from './components/Dashboard/Administrator/ManageLocation
 import ManageUsers from './components/Dashboard/Administrator/ManageUser/ManageUsers.jsx';
 import ManageTables from './components/Dashboard/Administrator/ManageTable/ManageTables.jsx';
 import ManageInventory from './components/Dashboard/Administrator/ManageInventory/ManageInventory.jsx';
+import ManageInventoryStock from './components/Dashboard/Cashier/ManageInventoryStock/addStock.jsx';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path='/dashboard/admin/users' element={<ManageUsers />}></Route>
         <Route path='/dashboard/admin/tables' element={<ManageTables />}></Route>
         <Route path='/dashboard/admin/inventory' element={<ManageInventory />}></Route>
+        <Route path='/dashboard/cashier/stock' element={<ManageInventoryStock />}></Route>
       </Routes>
   );
 }

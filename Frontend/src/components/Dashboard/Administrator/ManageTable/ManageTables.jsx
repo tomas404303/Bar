@@ -16,7 +16,12 @@ function ManageTables() {
 
             const dataMesas = await resMesas.json();
 
-            setMesas(dataMesas);
+            if (dataMesas === "F") {
+                setMesas([]);
+            } else {
+                setMesas(dataMesas);
+            }
+            
         } catch (error) {
             console.error("Error loading data:", error);
         }
