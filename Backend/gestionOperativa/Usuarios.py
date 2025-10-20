@@ -40,10 +40,10 @@ def crear_usuario(data: UsuarioBase):
         result_estado = cursor.fetchone()
 
         if not result_estado:
-            return {"status": "F", "reason": "Sede no encontrada"}
+            return {"status": "F", "reason": "Branch not found"}
 
         if result_estado[0] == 0:
-            return {"status": "F", "reason": "No se puede crear usuario en una sede inactiva"}
+            return {"status": "F", "reason": "Cannot create user in an inactive branch"}
 
         from Autenticacion.Security import encriptar_contraseña
         from Database import execute_query

@@ -1,7 +1,6 @@
 import NavBar from "../../../Layout/NavBar";
 import AddInventory from "./AddInventory";
 import UpdateInventory from "./UpdateInventory";
-import AddStock from "./AddStock";
 import { useState, useEffect } from "react";
 
 function ManageInventory() {
@@ -78,18 +77,19 @@ function ManageInventory() {
                             className={`tab-btn ${activateTab === "update" ? "active" : ""}`}
                             onClick={() => setActivateTab("update")}> Update Product
                         </button>
+                        {/* 
                         <button
                             className={`tab-btn ${activateTab === "stock" ? "active" : ""}`}
                             onClick={() => setActivateTab("stock")}> Add Stock
                         </button>
+                        */}
                     </div>
                 </section>
                 <section>
                     <div className="tab-content">
                         {activateTab === "add" ? (<AddInventory onProducto={handleProducto}/>)
-                         : activateTab === "update" ? (<UpdateInventory onProducto={handleProducto}/>)
-                         : (<AddStock onProducto={handleProducto}/>)
-                         }
+                         : (<UpdateInventory onProducto={handleProducto}/>)
+                        }
                     </div>
                 </section>
             </div>

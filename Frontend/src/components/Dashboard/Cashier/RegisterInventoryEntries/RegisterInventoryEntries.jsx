@@ -1,8 +1,8 @@
 import NavBar from "../../../Layout/NavBar";
-import AddInventory from "./addInventory";
+import AddStock from "./AddStock";
 import { useState, useEffect } from "react";
 
-function ManageInventory() {
+function RegisterInventoryEntries() {
     const usuario = localStorage.getItem("usuario");
     const cargo = localStorage.getItem("cargo");
     const sede = localStorage.getItem("sede");
@@ -72,11 +72,11 @@ function ManageInventory() {
                 </section>
 
                 <section>
-                    {showForm && <AddInventory onProducto={fetchData} />}
+                    {showForm && <AddStock onProducto={fetchData} />}
                 </section>
             </div>
         </div>
     );
 }
 
-export default ManageInventory;
+export default RegisterInventoryEntries;
