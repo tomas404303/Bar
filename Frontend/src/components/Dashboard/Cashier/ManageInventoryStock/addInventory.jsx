@@ -49,7 +49,7 @@ function AddStock({ onProducto }) {
             const data = await response.json();
 
             if (data.status === "OK") {
-                setSuccess(`Inventory updated successfully (${data.accion})`);
+                setSuccess(`Inventory updated successfully`);
                 setFormData({
                     codigoProducto: "",
                     sede: sedeUsuario,
