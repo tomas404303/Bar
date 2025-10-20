@@ -2,6 +2,7 @@ from fastapi import APIRouter, Query
 from pydantic import BaseModel
 from Database import connect_to_sqlserver
 import pyodbc
+from typing import Union
 
 router = APIRouter(
     prefix="/inventario",
@@ -9,7 +10,7 @@ router = APIRouter(
 )
 
 class InventarioItem(BaseModel):
-    idSucursal: int
+    idSucursal: Union[int, str]
     idProducto: int
     cantidad: int
 
@@ -59,6 +60,13 @@ def agregar_o_actualizar_inventario(data: InventarioItem):
     db = connect_to_sqlserver()
     cursor = db.cursor()
     try:
+
+        if isinstance(data.idSucursal, str):
+            cursor.execute("SELECT id FROM sucursales WHERE nombre = ?", (data.idSucursal,))
+            sede_result = cursor.fetchone()
+            if sede_result:
+                data.idSucursal = sede_result[0]
+
         query_estado = "SELECT estado FROM sucursales WHERE id = ?"
         cursor.execute(query_estado, (data.idSucursal,))
         result_estado = cursor.fetchone()
@@ -106,14 +114,19 @@ def agregar_o_actualizar_inventario(data: InventarioItem):
         db.close()
 
 @router.get("/sedes")
-def listar_sedes():
+def listar_sedes(cargo: str = Query(...), sede: str = Query(None)):
     db = connect_to_sqlserver()
     cursor = db.cursor()
     try:
-        cursor.execute("SELECT id, nombre FROM sucursales WHERE estado = 1")
+        if cargo == "Administrator":
+            cursor.execute("SELECT id, nombre FROM sucursales WHERE estado = 1")
+        else:
+            cursor.execute("SELECT id, nombre FROM sucursales WHERE estado = 1 AND nombre = ?", (sede,))
+        
         rows = cursor.fetchall()
         result = [{"id": r[0], "nombre": r[1]} for r in rows]
         return result
+
     except pyodbc.Error as e:
         return {"status": "F", "error": str(e)}
     finally:

@@ -17,11 +17,10 @@ class CrearProducto(BaseModel):
 
 class ActualizarProducto(BaseModel):
     id: int
-    nombreProducto: str | None = None
-    categoriaProducto: str | None = None
+    nombre: str | None = None
+    categoria: str | None = None
     costo: float | None = None
     valorVenta: float | None = None
-
 
 def generar_nuevo_id(cursor):
     query = "SELECT ISNULL(MAX(id), 0) + 1 FROM productos"
@@ -130,13 +129,13 @@ def actualizar_producto(data: ActualizarProducto):
         fields = []
         values = []
 
-        if data.nombreProducto is not None:
+        if data.nombre is not None:
             fields.append("nombre = ?")
-            values.append(data.nombreProducto)
+            values.append(data.nombre)
 
-        if data.categoriaProducto is not None:
+        if data.categoria is not None:
             fields.append("categoria = ?")
-            values.append(data.categoriaProducto)
+            values.append(data.categoria)
 
         if data.costo is not None:
             fields.append("costo = ?")

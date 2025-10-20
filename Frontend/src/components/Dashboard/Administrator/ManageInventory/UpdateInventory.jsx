@@ -57,6 +57,11 @@ function UpdateInventory({ onProducto }) {
         setSuccess("");
         setError("");
 
+        if (parseFloat(formData.valorVenta) < parseFloat(formData.costo)) {
+            setError("Sale price must be greater than or equal to cost");
+            return;
+        }
+
         try {
             const response = await fetch(`http://127.0.0.1:8000/productos/`, {
                 method: "PUT",
