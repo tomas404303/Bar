@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect  } from "react";
 
 function AddStock({ onProducto }) {
     const usuario = localStorage.getItem("usuario");
     const cargo = localStorage.getItem("cargo");
-    const sedeUsuario = localStorage.getItem("sede"); 
+    const sedeUsuario = localStorage.getItem("sede");
+    const [sedes, setSedes] = useState([]); 
 
     const [formData, setFormData] = useState({
         codigoProducto: "",
@@ -18,6 +19,19 @@ function AddStock({ onProducto }) {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
     };
+
+    useEffect(() => {
+        async function fetchSedes() {
+            try {
+                const res = await fetch(`http://localhost:8000/inventario/sedes?cargo=${cargo}&sede=${sedeUsuario}`);
+                const data = await res.json();
+                setSedes(data);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        fetchSedes();
+    }, [cargo, sedeUsuario]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -92,11 +106,16 @@ function AddStock({ onProducto }) {
                 </div>
                 <div className="form-row">
                     <label>Branch</label>
-                    <input
-                        type="text"
-                        value={formData.sede}
-                        disabled
-                    />
+                    {cargo === "Administrator" ? (
+                        <select name="sede" value={formData.sede} onChange={handleChange} required>
+                            <option value="">Select a branch</option>
+                            {sedes.map(s => (
+                                <option key={s.id} value={s.id}>{s.nombre}</option>
+                            ))}
+                        </select>
+                    ) : (
+                        <input type="text" value={formData.sede} disabled />
+                    )}
                 </div>
                 <div className="form-row">
                     <label>Quantity</label>
