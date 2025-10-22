@@ -34,7 +34,7 @@ function RegisterInventoryEntries() {
                         <table className="table">
                             <thead>
                                 <tr>
-                                    <th>Id</th>
+                                    <th>Cod</th>
                                     <th>Name</th>
                                     <th>Branch</th>
                                     <th>Qty</th>
