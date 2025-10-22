@@ -71,7 +71,7 @@ function AddStock({ onProducto }) {
                 });
                 if (onProducto) onProducto();
             } else {
-                setError(data.reason || data.error || "Error updating inventory");
+                setError("Error updating inventory");
             }
         } catch (err) {
             console.error(err);
