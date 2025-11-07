@@ -5,6 +5,7 @@ import './Login.css'
 
 
 function Login() {
+  localStorage.setItem("isLogged", "true");
   const navigate = useNavigate();
   const [usuario, setUsuario] = useState("");
   const [contrasena, setContrasena] = useState("");
