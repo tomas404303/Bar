@@ -9,6 +9,10 @@ from gestionOperativa.Mesas import router as mesas_router
 from gestionOperativa.Sedes import router as sedes_router
 from gestionOperativa.Productos import router as productos_router
 from gestionOperativa.Inventario import router as inventario_router
+from gestionOperativa.TomarPedido import router as pedido_router
+from gestionOperativa.FinalizarVenta import router as finalizar_router
+from gestionOperativa.Reportes import router as reportes_router
+
 
 load_dotenv(dotenv_path='.venv/.env')
 
@@ -37,3 +41,6 @@ app.include_router(mesas_router)
 app.include_router(sedes_router)
 app.include_router(productos_router)
 app.include_router(inventario_router)
+app.include_router(pedido_router)
+app.include_router(finalizar_router)
+app.include_router(reportes_router)

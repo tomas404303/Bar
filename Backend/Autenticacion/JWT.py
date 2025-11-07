@@ -13,9 +13,9 @@ def Base64UrlDecode(Data: str) -> bytes:
     Padding = '=' * (4 - (len(Data) % 4))
     return base64.urlsafe_b64decode(Data + Padding)
 
-def CrearTokenAcceso(Payload: dict, ExpMinutes=60) -> str:
+def CrearTokenAcceso(Payload: dict, ExpMinutes=1440) -> str:
     Header = {"alg": "HS256", "typ": "JWT"}
-    Payload["exp"] = int(time.time()) + (ExpMinutes * 60)
+    Payload["exp"] = int(time.time()) + (ExpMinutes * 1440)
 
     HeaderEnc = Base64UrlEncode(json.dumps(Header, separators=(',', ':')).encode())
     PayloadEnc = Base64UrlEncode(json.dumps(Payload, separators=(',', ':')).encode())
