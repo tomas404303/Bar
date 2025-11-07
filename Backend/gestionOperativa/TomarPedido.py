@@ -26,6 +26,37 @@ class ActualizarPedido(BaseModel):
     productos: list[ItemPedido]
 
 
+
+def merge_sort(lista, clave):
+    if len(lista) <= 1:
+        return lista
+
+    medio = len(lista) // 2
+    izquierda = merge_sort(lista[:medio], clave)
+    derecha = merge_sort(lista[medio:], clave)
+
+    return merge(izquierda, derecha, clave)
+
+def merge(izquierda, derecha, clave):
+    resultado = []
+    i = j = 0
+
+    while i < len(izquierda) and j < len(derecha):
+        # Ordenar de mayor a menor
+        if izquierda[i][clave] >= derecha[j][clave]:
+            resultado.append(izquierda[i])
+            i += 1
+        else:
+            resultado.append(derecha[j])
+            j += 1
+
+    resultado.extend(izquierda[i:])
+    resultado.extend(derecha[j:])
+    return resultado
+
+
+
+
 @router.get("/sedes")
 def listarSedesActivas():
     db = connect_to_sqlserver()
@@ -52,12 +83,14 @@ def obtener_mesas(idSede: int):
     return {"mesas": row[0]}
 
 
+
+
 @router.get("/productos/{idSede}")
 def productos_disponibles(idSede: int):
     db = connect_to_sqlserver()
     cursor = db.cursor()
 
-    query = """
+    cursor.execute("""
         SELECT 
             p.id,
             p.nombre,
@@ -67,14 +100,12 @@ def productos_disponibles(idSede: int):
         JOIN inventario i ON i.idProducto = p.id
         JOIN categoriaProducto cp ON cp.id = p.idCategoria
         WHERE i.idSucursal = ? AND i.cantidad > 0
-        ORDER BY i.cantidad DESC
-    """
+    """, (idSede,))
 
-    cursor.execute(query, (idSede,))
     rows = cursor.fetchall()
     db.close()
 
-    return [
+    productos = [
         {
             "id": r[0],
             "nombre": r[1],
@@ -83,6 +114,11 @@ def productos_disponibles(idSede: int):
         }
         for r in rows
     ]
+
+    productos_ordenados = merge_sort(productos, "disponible")
+
+    return productos_ordenados
+
 
 @router.post("/crear")
 def crear_pedido(data: CrearPedido):
@@ -104,15 +140,15 @@ def crear_pedido(data: CrearPedido):
             VALUES (?, ?, ?, 0, ?, GETDATE())
         """, (
             data.idSede,
-            1,                     
-            data.medioRecaudo,     
-            data.numeroMesa       
+            1,
+            data.medioRecaudo,
+            data.numeroMesa
         ))
 
         row = cursor.fetchone()
         if not row:
             db.rollback()
-            return {"status": "F", "reason": "No se generó idVenta"}
+            return {"status": "F", "reason": "No idVenta was generated"}
 
         idVenta = row[0]
         total_venta = 0
@@ -127,13 +163,13 @@ def crear_pedido(data: CrearPedido):
 
             if not row:
                 db.rollback()
-                return {"status": "F", "reason": f"Producto {item.idProducto} no está en inventario"}
+                return {"status": "F", "reason": f"the product {item.idProducto} not in inventory"}
 
             inventario_actual = row[0]
 
             if inventario_actual < item.cantidad:
                 db.rollback()
-                return {"status": "F", "reason": f"Inventario insuficiente para el producto {item.idProducto}"}
+                return {"status": "F", "reason": f"Insufficient inventory for the product {item.idProducto}"}
 
             cursor.execute("SELECT valorVenta FROM productos WHERE id = ?", (item.idProducto,))
             precio = cursor.fetchone()[0]
@@ -181,6 +217,8 @@ def crear_pedido(data: CrearPedido):
         db.close()
 
 
+
+
 @router.post("/actualizar-por-mesa")
 def actualizar_pedido_por_mesa(data: ActualizarPedido):
 
@@ -202,7 +240,7 @@ def actualizar_pedido_por_mesa(data: ActualizarPedido):
         if not row:
             return {
                 "status": "F",
-                "reason": "There is no active order at this table"
+                "reason": "There is no active order at this table."
             }
 
         idVenta = row[0]
@@ -218,18 +256,12 @@ def actualizar_pedido_por_mesa(data: ActualizarPedido):
             inv = cursor.fetchone()
 
             if not inv:
-                return {
-                    "status": "F",
-                    "reason": f"Product {item.idProducto} not in stock"
-                }
+                return {"status": "F", "reason": f"Product {item.idProducto} not in inventory"}
 
             inventario_actual = inv[0]
 
             if inventario_actual < item.cantidad:
-                return {
-                    "status": "F",
-                    "reason": f"Insufficient inventory for the product{item.idProducto}"
-                }
+                return {"status": "F", "reason": f"Insufficient inventory for product {item.idProducto}"}
 
             cursor.execute("""
                 SELECT cantidad
@@ -251,7 +283,7 @@ def actualizar_pedido_por_mesa(data: ActualizarPedido):
                     WHERE idVenta = ? AND idProducto = ?
                 """, (cantidad_nueva, subtotal_nuevo, idVenta, item.idProducto))
 
-                total_adicional += item.cantidad * precio
+                total_adicional += (item.cantidad * precio)
 
             else:
                 subtotal = item.cantidad * precio
@@ -304,6 +336,7 @@ def actualizar_pedido_por_mesa(data: ActualizarPedido):
 
 
 
+
 @router.get("/activos")
 def listar_pedidos_activos():
     db = connect_to_sqlserver()
@@ -320,7 +353,6 @@ def listar_pedidos_activos():
             FROM venta v
             WHERE v.estadoVenta = 1
               AND v.fechaFinVenta IS NULL
-            ORDER BY v.fechaInicioVenta DESC
         """)
         
         rows = cursor.fetchall()
@@ -343,5 +375,3 @@ def listar_pedidos_activos():
 
     finally:
         db.close()
-
-
