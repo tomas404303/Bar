@@ -21,18 +21,26 @@ def listar_inventario(cargo: str = Query(...), sede: str = Query(None)):
     try:
         if cargo == "Administrator":
             query = """
-                SELECT i.idProducto, p.nombre, i.idSucursal, s.nombre as nombreSede, i.cantidad
+                SELECT 
+                    i.idProducto, p.nombre, i.idSucursal, 
+                    s.nombre as nombreSede, i.cantidad, 
+                    FORMAT(p.valorVenta, 'N0', 'es-ES'), 
+                    cp.categoria
                 FROM inventario i
                 JOIN productos p ON i.idProducto = p.id
                 JOIN sucursales s ON i.idSucursal = s.id
+                JOIN categoriaProducto cp ON cp.id = p.idCategoria
             """
             cursor.execute(query)
         else:
             query = """
-                SELECT i.idProducto, p.nombre, i.idSucursal, s.nombre as nombreSede, i.cantidad
+                SELECT i.idProducto, p.nombre, i.idSucursal, 
+                    s.nombre as nombreSede, i.cantidad, FORMAT(p.valorVenta, 'N0', 'es-ES'), 
+                    cp.categoria
                 FROM inventario i
                 JOIN productos p ON i.idProducto = p.id
                 JOIN sucursales s ON i.idSucursal = s.id
+                JOIN categoriaProducto cp ON cp.id = p.idCategoria
                 WHERE s.nombre = ?
             """
             cursor.execute(query, (sede,))
@@ -45,7 +53,9 @@ def listar_inventario(cargo: str = Query(...), sede: str = Query(None)):
                 "nombre": r[1],
                 "idSucursal": r[2],
                 "sede": r[3],
-                "cantidad": r[4]
+                "cantidad": r[4],
+                "valorVenta": r[5],
+                "categoria": r[6],
             })
 
         return result

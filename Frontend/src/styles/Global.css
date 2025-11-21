@@ -152,3 +152,51 @@ body {
     transform: scale(1);
   }
 }
+
+/* Alert over time */
+.my-swal-popup {
+  background: #fefefe;
+  border-radius: 20px;
+  border: 2px solid #1E90FF;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.my-swal-title {
+  color: #1E90FF;
+  font-size: 24px;
+  font-weight: 600;
+}
+.my-swal-html {
+  color: #555;
+  font-size: 17px;
+}
+
+.my-swal-html img {
+  width: 70px;
+  margin-bottom: 20px
+}
+
+.my-swal-html br {
+  display: block;
+  margin-top: 10px;
+  content: "";
+}
+
+@media (max-width: 480px) {
+  .my-swal-title {
+    font-size: 22px;
+  }
+  .my-swal-html {
+    font-size: 14px;
+  }
+
+  .my-swal-html img {
+    width: 65px;
+    margin-bottom: 20px
+  }
+
+  .my-swal-html br {
+    margin-top: 8px;
+  }
+}

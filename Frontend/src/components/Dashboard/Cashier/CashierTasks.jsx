@@ -6,8 +6,10 @@ function CashierTasks() {
   return (
       <section className="role-section">
       <h3>Cashier Activities</h3>
+      <div className="button-grid">
+        <button onClick={() => navigate("/dashboard/cashier/sale")}>Complete Sale</button>
+      </div>
       <div className="button-grida">
-        <button className="build">Complete Sale</button>
         <button className="build">Generate Reports</button>
       </div>
       <div className="button-grid">

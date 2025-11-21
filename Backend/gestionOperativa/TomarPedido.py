@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from pydantic import BaseModel
 from Database import connect_to_sqlserver
 import pyodbc
@@ -85,39 +85,65 @@ def obtener_mesas(idSede: int):
 
 
 
-@router.get("/productos/{idSede}")
-def productos_disponibles(idSede: int):
+@router.get("/productos/")
+def productos_disponibles(cargo: str = Query(...), sede: str = Query(None)):
     db = connect_to_sqlserver()
     cursor = db.cursor()
+    try:
+        if cargo == "Administrator":
+            query = """
+                SELECT 
+                    p.id,
+                    p.nombre,
+                    cp.categoria AS disponible,
+                    i.cantidad, s.nombre,
+                    FORMAT(p.valorVenta, 'N0', 'es-ES')
+                FROM productos p
+                JOIN inventario i ON i.idProducto = p.id
+                JOIN sucursales s ON i.idSucursal = s.id
+                JOIN categoriaProducto cp ON cp.id = p.idCategoria
+                WHERE i.cantidad > 0
+            """
+            cursor.execute(query)
+        else:
+            query = """
+                SELECT 
+                    p.id,
+                    p.nombre,
+                    cp.categoria AS disponible,
+                    i.cantidad, 
+                    s.nombre,
+                    FORMAT(p.valorVenta, 'N0', 'es-ES')
+                FROM productos p
+                JOIN inventario i ON i.idProducto = p.id
+                JOIN sucursales s ON i.idSucursal = s.id
+                JOIN categoriaProducto cp ON cp.id = p.idCategoria
+                WHERE s.nombre = ? AND i.cantidad > 0
+            """
+            cursor.execute(query, (sede,))
 
-    cursor.execute("""
-        SELECT 
-            p.id,
-            p.nombre,
-            cp.categoria AS nombreCategoria,
-            i.cantidad AS disponible
-        FROM productos p
-        JOIN inventario i ON i.idProducto = p.id
-        JOIN categoriaProducto cp ON cp.id = p.idCategoria
-        WHERE i.idSucursal = ? AND i.cantidad > 0
-    """, (idSede,))
+        rows = cursor.fetchall()
+        result = []
 
-    rows = cursor.fetchall()
-    db.close()
+        for r in rows:
+            result.append({
+                "id": r[0],
+                "nombre": r[1],
+                "categoria": r[2],
+                "cantidad": r[3],
+                "sede": r[4],
+                "valorVenta": r[5]
+            })
 
-    productos = [
-        {
-            "id": r[0],
-            "nombre": r[1],
-            "categoria": r[2],
-            "disponible": r[3]
-        }
-        for r in rows
-    ]
-
-    productos_ordenados = merge_sort(productos, "disponible")
-
-    return productos_ordenados
+        #productos_ordenados = merge_sort(result, "disponible")
+        #return productos_ordenados
+        
+        return result
+    
+    except pyodbc.Error as e:
+        return {"status": "F", "error": str(e)}
+    finally:
+        db.close()
 
 
 @router.post("/crear")

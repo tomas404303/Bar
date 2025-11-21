@@ -1,15 +1,67 @@
 import { useState, useEffect } from "react";
+import SearchDropdown from "../../../SearchDropdown/SearchDropdown";
+
 
 function AddInventory({ onProducto }) {
     const [formData, setFormData] = useState({
         nombreProducto: "",
-        categoria: "",
+        idcategoria: "",
         costo: "",
         precioVenta: "",
     });
 
+    const [categorias, setCategorias] = useState([]);
+    const [categoriaText, setCategoriaText] = useState("");
+
+    const categoriasFormateadas = categorias.map(c => ({
+        id: c.id,
+        label: c.categoria
+    }));
+
     const [success, setSuccess] = useState("");
     const [error, setError] = useState("");
+
+    // Cargar categorias
+    const loadCategorias = async () => {
+        try {
+            const res = await fetch("http://localhost:8000/productos/categorias/listar");
+            const data = await res.json();
+            setCategorias(data);
+        } catch (err) {
+            console.error("Error loading categories", err);
+        }
+    };
+
+    useEffect(() => {
+        loadCategorias();
+    }, []);
+
+    /* Crear Categoria */
+    const handleCreateCategoria = async (nombreNueva) => {
+        try {
+            const response = await fetch("http://localhost:8000/productos/categorias/crear", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ categoria: nombreNueva }),
+            });
+
+            const result = await response.json();
+
+            if (result.status === "OK") {
+                await loadCategorias();
+                setSuccess("Category created correctly");
+                const nueva = categorias.find(c => c.categoria === nombreNueva);
+                setFormData((prev) => ({
+                    ...prev,
+                    idCategoria: nueva?.id || ""
+                }));
+            } else {
+                setError(result.reason || "Error creating category");
+            }
+        } catch (err) {
+            setError("Error creating categorys");
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -18,8 +70,14 @@ function AddInventory({ onProducto }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
         setSuccess("");
         setError("");
+
+        if (!formData.idCategoria) {
+            setError("Please select a category");
+            return;
+        }
 
         if (parseInt(formData.precioVenta) < parseInt(formData.costo)) {
             setError("The sale price cannot be lower than the cost price.");
@@ -34,7 +92,7 @@ function AddInventory({ onProducto }) {
                 },
                 body: JSON.stringify({
                     nombreProducto: formData.nombreProducto,
-                    categoria: formData.categoria,
+                    idCategoria: formData.idCategoria,
                     costo: parseInt(formData.costo),
                     precioVenta: parseInt(formData.precioVenta),
                 }),
@@ -46,10 +104,11 @@ function AddInventory({ onProducto }) {
                 setSuccess("Product created correctly");
                 setFormData({
                     nombreProducto: "",
-                    categoria: "",
+                    idCategoria: "",
                     costo: "",
                     precioVenta: "",
                 });
+                setCategoriaText("");
 
                 onProducto();
             } else {
@@ -63,24 +122,17 @@ function AddInventory({ onProducto }) {
     const handleClean = () => {
         setFormData({
             nombreProducto: "",
-            categoria: "",
+            idcategoria: "",
             costo: "",
             precioVenta: "",
         })
+        setCategoriaText("");
     }
 
     const handleCloseModal = () => {
         setSuccess("");
         setError("");
     };
-
-    const customStyles = {
-    menuList: (base) => ({
-      ...base,
-      maxHeight: 150,
-      overflowY: "auto",
-    }),
-  };
 
     return (
         <section className="section">
@@ -96,8 +148,20 @@ function AddInventory({ onProducto }) {
                 <div className="form-row">
                     <div>
                         <label>Category</label>
-                        <input type="text" name="categoria" value={formData.categoria}
-                            onChange={handleChange} required />
+                        <SearchDropdown
+                            valueText={categoriaText}
+                            setValueText={setCategoriaText}
+                            data={categoriasFormateadas}
+                            placeholder="Search or create category"
+                            allowCreate={true}
+                            onSelect={(item) => {
+                                setCategoriaText(item.label);
+                                setFormData((prev) => ({ ...prev, idCategoria: item.id }));
+                            }}
+                            onCreate={async (nombreCat) => {
+                                await handleCreateCategoria(nombreCat);
+                            }}
+                        />
                     </div>
                 </div>
                 <div className="form-row">

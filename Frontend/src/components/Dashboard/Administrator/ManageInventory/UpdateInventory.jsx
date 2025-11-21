@@ -1,16 +1,67 @@
 import { useState, useEffect } from "react";
+import SearchDropdown from "../../../SearchDropdown/SearchDropdown";
 
 function UpdateInventory({ onProducto }) {
     const [formData, setFormData] = useState({
         codigoProducto: "",
         nombre: "",
-        categoria: "",
+        idCategoria: "",
         costo: "",
         valorVenta: "",
     });
 
+    const [categorias, setCategorias] = useState([]);
+    const [categoriaText, setCategoriaText] = useState("");
+
+    const categoriasFormateadas = categorias.map(c => ({
+        id: c.id,
+        label: c.categoria
+    }));
+
     const [success, setSuccess] = useState("");
     const [error, setError] = useState("");
+
+    // Cargar categorias
+    const loadCategorias = async () => {
+        try {
+            const res = await fetch("http://localhost:8000/productos/categorias/listar");
+            const data = await res.json();
+            setCategorias(data);
+        } catch (err) {
+            console.error("Error loading categories", err);
+        }
+    };
+
+    useEffect(() => {
+        loadCategorias();
+    }, []);
+
+    /* Crear Categoria */
+    const handleCreateCategoria = async (nombreNueva) => {
+        try {
+            const response = await fetch("http://localhost:8000/productos/categorias/crear", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ categoria: nombreNueva }),
+            });
+
+            const result = await response.json();
+
+            if (result.status === "OK") {
+                await loadCategorias();
+                setSuccess("Category created correctly");
+                const nueva = categorias.find(c => c.categoria === nombreNueva);
+                setFormData((prev) => ({
+                    ...prev,
+                    idCategoria: nueva?.id || ""
+                }));
+            } else {
+                setError(result.reason || "Error creating category");
+            }
+        } catch (err) {
+            setError("Error creating categorys");
+        }
+    };
 
     const handleBlur = async () => {
         if (formData.codigoProducto) {
@@ -25,20 +76,22 @@ function UpdateInventory({ onProducto }) {
                     setFormData((prev) => ({
                         ...prev,
                         nombre: data.nombre || "",
-                        categoria: data.categoria || "",
+                        idCategoria: data.idCategoria || "",
                         costo: data.costo || "",
                         valorVenta: data.valorVenta || ""
                     }));
+                    setCategoriaText(data.categoria);
                     setError("");
                 } else {
                     setError("No product with that code and branch");
                     setFormData((prev) => ({
                         ...prev,
                         nombre: "",
-                        categoria: "",
+                        idCategoria: "",
                         costo: "",
                         valorVenta: ""
                     }));
+                    setCategoriaText("");
                 }
             } catch (error) {
                 console.error("Error getting product:", error);
@@ -57,6 +110,13 @@ function UpdateInventory({ onProducto }) {
         setSuccess("");
         setError("");
 
+        console.log(formData);
+
+        if (!formData.idCategoria) {
+            setError("Please select a category");
+            return;
+        }
+
         if (parseFloat(formData.valorVenta) < parseFloat(formData.costo)) {
             setError("Sale price must be greater than or equal to cost");
             return;
@@ -69,7 +129,7 @@ function UpdateInventory({ onProducto }) {
                 body: JSON.stringify({
                     id: parseInt(formData.codigoProducto),
                     nombre: formData.nombre || null,
-                    categoria: formData.categoria || null,
+                    idCategoria: formData.idCategoria || null,
                     costo: formData.costo ? parseFloat(formData.costo) : null,
                     valorVenta: formData.valorVenta ? parseFloat(formData.valorVenta) : null
                 }),
@@ -82,10 +142,11 @@ function UpdateInventory({ onProducto }) {
                 setFormData({
                     codigoProducto: "",
                     nombre: "",
-                    categoria: "",
+                    idCategoria: "",
                     costo: "",
                     valorVenta: "",
                 });
+                setCategoriaText("");
                 onProducto();
             } else {
                 setError("Error updating product or ID not found");
@@ -101,7 +162,7 @@ function UpdateInventory({ onProducto }) {
         setFormData({
             codigoProducto: "",
             nombre: "",
-            categoria: "",
+            idCategoria: "",
             costo: "",
             valorVenta: "",
         });
@@ -131,8 +192,20 @@ function UpdateInventory({ onProducto }) {
                     </div>
                     <div>
                         <label>Category</label>
-                        <input type="text" name="categoria" value={formData.categoria || ""}
-                            onChange={handleChange} required />
+                        <SearchDropdown
+                            valueText={categoriaText}
+                            setValueText={setCategoriaText}
+                            data={categoriasFormateadas}
+                            placeholder="Search or create category"
+                            allowCreate={true}
+                            onSelect={(item) => {
+                                setCategoriaText(item.label);
+                                setFormData((prev) => ({ ...prev, idCategoria: item.id }));
+                            }}
+                            onCreate={async (nombreCat) => {
+                                await handleCreateCategoria(nombreCat);
+                            }}
+                        />
                     </div>
                 </div>
                 <div className="form-row">

@@ -72,6 +72,11 @@
   z-index: 2;
 }
 
+.total-row td {
+  background-color: #ffffff;
+  border-top: 2px inset #E6F2FF;
+}
+
 .status {
   padding: 5px 12px;
   border-radius: 20px;
@@ -146,7 +151,6 @@ select option {
 
 select:valid {
   color: #1a1a1a;
-  ;
 }
 
 select:focus {
@@ -220,8 +224,98 @@ select:focus {
   color: white;
 }
 
-/* Responsive */
+/* COMPLETE SALE */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+}
 
+.label {
+  min-width: 115px;
+  font-weight: 600;
+  color: #1b4966;
+}
+
+.status-row .status-pill {
+  display: inline-block;
+  background: #e9f1fb;
+  color: #19669b;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: 1px solid #d1e9ff;
+}
+
+/* Payment section */
+.payment-section {
+  margin-top: 12px;
+}
+
+.pay-label {
+  margin: 10px 0 8px 0;
+  color: #0b66b0;
+  font-weight: 700;
+}
+
+.payment-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.pay-btn {
+  flex: 1;
+  padding: 8px 6px;
+  border-radius: 10px;
+  border: 2px solid #bcdfff;
+  background: #fff;
+  color: #0b6fb0;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 150ms ease;
+  box-shadow: inset 0 0 0 rgba(0,0,0,0);
+}
+
+.pay-btn:hover {
+  transform: translateY(-2px);
+}
+
+.pay-btn-selected {
+  background: #0b6fb0;
+  color: white;
+  border-color: #0a5f98;
+  box-shadow: 0 4px 12px rgba(11,111,176,0.16);
+}
+
+/* Confirm button */
+.confirm-btn {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  background: #2db34a;
+  color: white;
+  box-shadow: 0 6px 14px rgba(45,179,74,0.16);
+  transition: background 150ms ease, transform 120ms ease;
+}
+
+.confirm-btn:hover {
+  transform: translateY(-2px);
+}
+
+.confirm-disabled {
+  background: #f0f0f0;
+  color: #b7b7b7;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+
+/* Responsive */
 
 @media (max-width: 768px) {
   .manage {
@@ -285,7 +379,6 @@ select:focus {
   }
 }
 
-/* 📱 Pequeños dispositivos (celulares más angostos) */
 @media (max-width: 480px) {
 
   .form {

@@ -7,6 +7,8 @@ import ManageUsers from './components/Dashboard/Administrator/ManageUser/ManageU
 import ManageTables from './components/Dashboard/Administrator/ManageTable/ManageTables.jsx';
 import ManageInventory from './components/Dashboard/Administrator/ManageInventory/ManageInventory.jsx';
 import RegisterInventoryEntries from './components/Dashboard/Cashier/RegisterInventoryEntries/RegisterInventoryEntries.jsx';
+import CompleteSale from './components/Dashboard/Cashier/CompleteSale/CompleteSale.jsx';
+import TakeTableOrder from './components/Dashboard/Waiter/TakeTableOrder/TakeTableOrder.jsx';
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
         <Route path='/dashboard/admin/tables' element={<ManageTables />}></Route>
         <Route path='/dashboard/admin/inventory' element={<ManageInventory />}></Route>
         <Route path='/dashboard/cashier/stock' element={<RegisterInventoryEntries />}></Route>
+        <Route path='/dashboard/cashier/sale' element={<CompleteSale />}></Route>
+        <Route path='/dashboard/waiter/order' element={<TakeTableOrder />}></Route>
       </Routes>
   );
 }
