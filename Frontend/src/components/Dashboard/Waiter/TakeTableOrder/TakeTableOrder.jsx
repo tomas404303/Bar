@@ -9,19 +9,59 @@ function TakeTableOrder() {
 
     const [sedes, setSedes] = useState([]); 
     const [inventario, setInventario] = useState([]);
+    const [filteredInventario, setFilteredInventario] = useState([]);
 
     const [categorias, setCategorias] = useState([]);
     const [categoriaText, setCategoriaText] = useState("");
 
     const [formData, setFormData] = useState({
-        idcategoria: "",
-        sede: sede
+        sede: cargo === "Administrator" ? "" : (sede || ""), 
+        idCategoria: null,
+        categoriaLabel: ""
     });
+
+    // ----------------------------------------------------------------------------------------------------
+    // FILTRO PRINCIPAL
+    // ----------------------------------------------------------------------------------------------------
+    const filterInventarioWith = (updatedForm) => {
+        let data = [...inventario];
+
+        if (cargo !== "Administrator" && updatedForm.sede) {
+            data = data.filter(item => item.idSucursal == updatedForm.sede);
+        }
+
+        if (cargo === "Administrator" && updatedForm.sede) {
+            // admin sí aplicó filtro manual → filtrar
+            data = data.filter(item => item.idSucursal == updatedForm.sede);
+        }
+
+        // Filtrar por categoría si existe
+        if (updatedForm.categoriaLabel?.trim()) {
+            data = data.filter(item =>
+                item.categoria.toLowerCase().trim() === updatedForm.categoriaLabel.toLowerCase().trim()
+            );
+        }
+
+        setFilteredInventario(data);
+    };
+
+    useEffect(() => {
+        filterInventarioWith(formData);
+    }, [inventario, categorias]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+
+        setFormData(prev => {
+            const updated = { ...prev, [name]: value };
+            filterInventarioWith(updated);
+            return updated;
+        });
     };
 
+    // ----------------------------------------------------------------------------------------------------
+    // CARGAR SEDES
+    // ----------------------------------------------------------------------------------------------------
     useEffect(() => {
         async function fetchSedes() {
             try {
@@ -35,11 +75,30 @@ function TakeTableOrder() {
         fetchSedes();
     }, [cargo, sede]);
 
+    useEffect(() => {
+        if (cargo !== "Administrator" && sedes.length > 0) {
+            // buscar la sede por nombre
+            const match = sedes.find(s => s.nombre === sede);
+
+            if (match) {
+                setFormData(prev => {
+                    const updated = { ...prev, sede: match.id };
+                    filterInventarioWith(updated);
+                    return updated;
+                });
+            }
+        }
+    }, [sedes]);
+
+    // ----------------------------------------------------------------------------------------------------
+    // CARGAR INVENTARIO
+    // ----------------------------------------------------------------------------------------------------
     const fetchData = async () => {
         try {
             const res = await fetch(`http://localhost:8000/pedido/productos/?cargo=${cargo}&sede=${sede}`);
             const data = await res.json();
             setInventario(data);
+            setFilteredInventario(data); // inicial
         } catch (error) {
             console.error("Error loading inventory data:", error);
         }
@@ -49,12 +108,9 @@ function TakeTableOrder() {
         fetchData();
     }, []);
 
-    const categoriasFormateadas = categorias.map(c => ({
-        id: c.id,
-        label: c.categoria
-    }));
-
-    // Cargar categorias
+    // ----------------------------------------------------------------------------------------------------
+    // CARGAR CATEGORÍAS
+    // ----------------------------------------------------------------------------------------------------
     const loadCategorias = async () => {
         try {
             const res = await fetch("http://localhost:8000/productos/categorias/listar");
@@ -66,17 +122,39 @@ function TakeTableOrder() {
     };
 
     useEffect(() => {
-            loadCategorias();
+        loadCategorias();
     }, []);
 
+    const categoriasFormateadas = categorias.map(c => ({
+        id: c.id,
+        label: c.categoria
+    }));
+
+    useEffect(() => {
+        if (categoriaText.trim() === "") {
+            setFormData(prev => {
+                const updated = { ...prev, idCategoria: null, categoriaLabel: "" };
+                filterInventarioWith(updated);
+                return updated;
+            });
+        }
+    }, [categoriaText]);
+
+    // ----------------------------------------------------------------------------------------------------
+    // RENDER
+    // ----------------------------------------------------------------------------------------------------
     return (
         <div className="dashboardMain">
             <NavBar usuario={usuario} />
+
             <div className="manage">
+                {/* ------------------------ SECCIÓN 1 ------------------------ */}
                 <section className="section">
                     <h2 className="title">Select Table</h2>
+
                     <div className="row">
                         <label className="label">Branch:</label>
+
                         {cargo === "Administrator" ? (
                             <select name="sede" value={formData.sede} onChange={handleChange} required>
                                 <option value="">Select a branch</option>
@@ -85,34 +163,56 @@ function TakeTableOrder() {
                                 ))}
                             </select>
                         ) : (
-                            <input type="text" value={formData.sede} disabled />
+                            <input
+                                type="text"
+                                value={
+                                    sedes.find(s => s.id === formData.sede)?.nombre || ""
+                                }
+                                disabled
+                            />
                         )}
                     </div>
+
                     <div className="row">
                         <label className="label">Table Number:</label>
                         <select className="select"></select>
                     </div>
+
                     <div className="row status-row">
                         <label className="label">Table Status:</label>
                         <span className="status-pill">Occupied</span>
                     </div>
                 </section>
+
+                {/* ------------------------ SECCIÓN 2 ------------------------ */}
                 <section className="section">
                     <h2 className="title">Available Products</h2>
+
                     <div className="row">
                         <label className="label">Category:</label>
+
                         <SearchDropdown
                             valueText={categoriaText}
                             setValueText={setCategoriaText}
                             data={categoriasFormateadas}
-                            placeholder="Search"
-                            allowCreate={true}
+                            placeholder="Search category"
+                            allowCreate={false}
                             onSelect={(item) => {
                                 setCategoriaText(item.label);
-                                setFormData((prev) => ({ ...prev, idCategoria: item.id }));
+
+                                setFormData(prev => {
+                                    const updated = { 
+                                        ...prev, 
+                                        idCategoria: item.id, 
+                                        categoriaLabel: item.label || "" 
+                                    };
+                                    filterInventarioWith(updated);
+                                    return updated;
+                                });
                             }}
                         />
                     </div>
+
                     <div className="table-container">
                         <table className="table">
                             <thead>
@@ -135,29 +235,25 @@ function TakeTableOrder() {
                                     </tr>
                                 )}
                             </thead>
+
                             <tbody>
-                                {Array.isArray(inventario) && inventario.length > 0 && cargo === "Administrator" ? (
-                                    inventario.map((item) => (
+                                {Array.isArray(filteredInventario) && filteredInventario.length > 0 ? (
+                                    filteredInventario.map(item => (
                                         <tr key={`${item.idProducto}-${item.idSucursal}`}>
                                             <td>{item.nombre}</td>
                                             <td>{item.categoria}</td>
-                                            <td>{item.sede}</td>
-                                            <td>{item.cantidad}</td>
-                                            <td>$ {item.valorVenta}</td>
-                                        </tr>
-                                    ))
-                                ) : Array.isArray(inventario) && inventario.length > 0 && cargo === "Waiter" ? (
-                                    inventario.map((item) => (
-                                        <tr key={`${item.idProducto}-${item.idSucursal}`}>
-                                            <td>{item.nombre}</td>
-                                            <td>{item.categoria}</td>
+
+                                            {cargo === "Administrator" && (
+                                                <td>{item.sede}</td>
+                                            )}
+
                                             <td>{item.cantidad}</td>
                                             <td>$ {item.valorVenta}</td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="4">No inventory records found</td>
+                                        <td colSpan="6">No inventory records found</td>
                                     </tr>
                                 )}
                             </tbody>
