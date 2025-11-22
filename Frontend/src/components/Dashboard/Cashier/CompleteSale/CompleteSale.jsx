@@ -18,7 +18,11 @@ function CompleteSale() {
                     </div>
                     <div className="row status-row">
                         <label className="label">Table Status:</label>
-                        <span className="status-pill">Occupied</span>
+                        <span className="status-unoccupied">Unoccupied</span>
+                        <span className="status-occupied">Occupied</span>
+                    </div>
+                    <div className="button-row" style={{marginTop:'20px'}}>
+                        <button type="submit" className="save-btn">Search</button>
                     </div>
                 </section>
                 <section className="section">
@@ -53,9 +57,9 @@ function CompleteSale() {
                                 </button>
                             ))}
                         </div>
-                        <button className="confirm-btn">
-                            Confirm payment
-                        </button>
+                    </div>
+                    <div className="button-row" style={{marginTop:'40px'}}>
+                        <button type="submit" className="save-btn">Confirm payment</button>
                     </div>
                 </section>
             </div>

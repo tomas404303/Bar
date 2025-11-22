@@ -182,6 +182,17 @@ select:focus {
   background-color: #0056b3;
 }
 
+.order-btn {
+  border-radius: 20px;
+  max-width: 200px;
+}
+
+.qty-btn {
+  border-radius: 20px;
+  max-width: 100px;
+  font-size: 0.9rem;
+}
+
 .cancel-btn {
   background-color: white;
   color: #007bff;
@@ -224,7 +235,7 @@ select:focus {
   color: white;
 }
 
-/* COMPLETE SALE */
+/* -------------------- COMPLETE SALE -----------------------*/
 .row {
   display: flex;
   align-items: center;
@@ -238,14 +249,24 @@ select:focus {
   color: #1b4966;
 }
 
-.status-row .status-pill {
+.status-row .status-unoccupied,
+.status-row .status-occupied {
   display: inline-block;
-  background: #e9f1fb;
-  color: #19669b;
   padding: 6px 10px;
   border-radius: 8px;
   font-weight: 600;
-  border: 1px solid #d1e9ff;
+}
+
+.status-unoccupied {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #155724;
+}
+
+.status-occupied {
+  background: #fff3cd;
+  color: #b58900;
+  border: 1px solid #b58900;
 }
 
 /* Payment section */
@@ -402,6 +423,16 @@ select:focus {
   input {
     font-size: 1rem;
     padding: 10px;
+  }
+
+  .order-btn {
+    min-width: 100px;
+    font-size: 0.8rem;
+  }
+
+  .qty-btn {
+    font-size: 0.8rem;
+    min-width: 90px;
   }
 
   .button-row {

@@ -97,7 +97,8 @@ def productos_disponibles(cargo: str = Query(...), sede: str = Query(None)):
                     p.nombre,
                     cp.categoria AS disponible,
                     i.cantidad, s.nombre,
-                    FORMAT(p.valorVenta, 'N0', 'es-ES')
+                    FORMAT(p.valorVenta, 'N0', 'es-ES'),
+                    i.idSucursal
                 FROM productos p
                 JOIN inventario i ON i.idProducto = p.id
                 JOIN sucursales s ON i.idSucursal = s.id
@@ -113,7 +114,8 @@ def productos_disponibles(cargo: str = Query(...), sede: str = Query(None)):
                     cp.categoria AS disponible,
                     i.cantidad, 
                     s.nombre,
-                    FORMAT(p.valorVenta, 'N0', 'es-ES')
+                    FORMAT(p.valorVenta, 'N0', 'es-ES'),
+                    i.idSucursal
                 FROM productos p
                 JOIN inventario i ON i.idProducto = p.id
                 JOIN sucursales s ON i.idSucursal = s.id
@@ -127,24 +129,88 @@ def productos_disponibles(cargo: str = Query(...), sede: str = Query(None)):
 
         for r in rows:
             result.append({
-                "id": r[0],
+                "idProducto": r[0],
                 "nombre": r[1],
                 "categoria": r[2],
                 "cantidad": r[3],
                 "sede": r[4],
-                "valorVenta": r[5]
+                "valorVenta": r[5],
+                "idSucursal": r[6],
             })
 
-        #productos_ordenados = merge_sort(result, "disponible")
-        #return productos_ordenados
-        
-        return result
+        productos_ordenados = merge_sort(result, "cantidad")
+        return productos_ordenados
     
     except pyodbc.Error as e:
         return {"status": "F", "error": str(e)}
     finally:
         db.close()
 
+@router.get("/estado-mesa/{sede}/{numeroMesa}")
+def estado_mesa(sede: int, numeroMesa: int):
+    db = connect_to_sqlserver()
+    cursor = db.cursor()
+    try:
+        cursor.execute("""
+            SELECT estadoVenta
+            FROM venta
+            WHERE idSede = ? AND numeroMesaAsociada = ? AND fechaFinVenta IS NULL
+        """, (sede, numeroMesa))
+        row = cursor.fetchone()
+        if row:
+            estado = int(row[0])  # <-- conversión explícita
+            return {"status": "OK", "estadoVenta": estado}
+        else:
+            return {"status": "OK", "estadoVenta": 0}  # 0: desocupada
+    except Exception as e:
+        return {"status": "F", "error": str(e)}
+    finally:
+        db.close()
+
+@router.post("/crear/venta")
+def crear_venta(sede: int = Query(...), numeroMesa: int = Query(...)):
+    db = connect_to_sqlserver()
+    cursor = db.cursor()
+    try:
+        cursor.execute("""
+            INSERT INTO venta (
+                idSede,
+                estadoVenta,
+                medioRecaudado,
+                total,
+                numeroMesaAsociada,
+                fechaInicioVenta
+            )
+            OUTPUT INSERTED.id
+            VALUES (?, ?, 1, 0, ?, GETDATE())
+        """, (
+            sede,
+            1,
+            numeroMesa
+        ))
+        row = cursor.fetchone()
+        if not row:
+            db.rollback()
+            return {"status": "F", "reason": "No idVenta was generated"}
+        idVenta = row[0]
+        db.commit()
+        # Consultar el estado actualizado de la mesa
+        cursor.execute("""
+            SELECT estadoVenta
+            FROM venta
+            WHERE idSede = ? AND numeroMesaAsociada = ? AND fechaFinVenta IS NULL
+        """, (sede, numeroMesa))
+        estado_row = cursor.fetchone()
+        if estado_row:
+            estado_mesa = int(estado_row[0])
+        else:
+            estado_mesa = 0
+        return {"status": "OK", "idVenta": idVenta, "estadoMesa": estado_mesa}
+    except Exception as e:
+        db.rollback()
+        return {"status": "F", "error": str(e)}
+    finally:
+        db.close()
 
 @router.post("/crear")
 def crear_pedido(data: CrearPedido):

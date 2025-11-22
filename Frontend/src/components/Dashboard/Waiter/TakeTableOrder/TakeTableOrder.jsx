@@ -7,21 +7,108 @@ function TakeTableOrder() {
     const cargo = localStorage.getItem("cargo");
     const sede = localStorage.getItem("sede");
 
-    const [sedes, setSedes] = useState([]); 
-    const [inventario, setInventario] = useState([]);
+    const [estadoMesa, setEstadoMesa] = useState(null);
+
     const [filteredInventario, setFilteredInventario] = useState([]);
+
+    const [sedes, setSedes] = useState([]); 
+    const [mesasDisponibles, setMesasDisponibles] = useState([]);
+    const [inventario, setInventario] = useState([]);
 
     const [categorias, setCategorias] = useState([]);
     const [categoriaText, setCategoriaText] = useState("");
+    const [loadingMesas, setLoadingMesas] = useState(false);
+
+    const [success, setSuccess] = useState("");
+    const [error, setError] = useState("");
 
     const [formData, setFormData] = useState({
         sede: cargo === "Administrator" ? "" : (sede || ""), 
         idCategoria: null,
-        categoriaLabel: ""
+        categoriaLabel: "",
+        mesa: ""
     });
 
     // ----------------------------------------------------------------------------------------------------
-    // FILTRO PRINCIPAL
+    // ESTADO DE LA MESA: 0 = desocupada, 1 = ocupada
+    // ----------------------------------------------------------------------------------------------------
+
+    // Consultar estado de la mesa cada vez que cambian sede o mesa
+    useEffect(() => {
+        const fetchEstadoMesa = async () => {
+            if (!formData.sede || !formData.mesa) {
+                setEstadoMesa(null);
+                return;
+            }
+            try {
+                const res = await fetch(`http://localhost:8000/pedido/estado-mesa/${formData.sede}/${formData.mesa}`);
+                const data = await res.json();
+                if (data.status === "OK") {
+                    setEstadoMesa(data.estadoVenta);
+                } else {
+                    setEstadoMesa(null);
+                }
+            } catch (err) {
+                setEstadoMesa(null);
+            }
+        };
+        fetchEstadoMesa();
+    }, [formData.sede, formData.mesa]);
+
+    // ----------------------------------------------------------------------------------------------------
+    // CREAR VENTA
+    // ----------------------------------------------------------------------------------------------------
+
+    // Handler para el submit del botón Start order
+    const handleStartOrder = async (e) => {
+        e.preventDefault();
+        setSuccess("");
+        setError("");
+        if (!formData.sede || !formData.mesa) {
+            setError("Select a branch and a table");
+            return;
+        }
+        if (estadoMesa === 1) {
+            setError("The table is occupied. A new sale cannot be initiated.");
+            return;
+        }
+        try {
+            const url = `http://localhost:8000/pedido/crear/venta?sede=${formData.sede}&numeroMesa=${formData.mesa}`;
+            const res = await fetch(url, { method: "POST" });
+            const data = await res.json();
+            if (data.status === "OK") {
+                setSuccess("Sale initiated successfully.");
+                // Actualizar el estado de la mesa inmediatamente
+                if (typeof data.estadoMesa !== "undefined") {
+                    setEstadoMesa(data.estadoMesa);
+                }
+            } else {
+                setError("A sale is already active.");
+            }
+        } catch (err) {
+            setError("Error starting sale");
+        }
+    };
+
+    // ----------------------------------------------------------------------------------------------------
+    // Continuar orden (no implementado)
+    // ----------------------------------------------------------------------------------------------------
+
+    // Handler para continuar orden (no implementado)
+    const handleContinueOrder = (e) => {
+        e.preventDefault();
+        setSuccess("");
+        setError("");
+        setError("Funcionalidad de continuar orden aún no implementada.");
+    };
+    // Handler para cerrar los modales
+    const handleCloseModal = () => {
+        setSuccess("");
+        setError("");
+    };
+
+    // ----------------------------------------------------------------------------------------------------
+    // FILTRO DE SEDE, CATEGORÍA
     // ----------------------------------------------------------------------------------------------------
     const filterInventarioWith = (updatedForm) => {
         let data = [...inventario];
@@ -89,6 +176,43 @@ function TakeTableOrder() {
             }
         }
     }, [sedes]);
+    
+    // ----------------------------------------------------------------------------------------------------
+    // CARGAR MESAS
+    // ----------------------------------------------------------------------------------------------------
+    useEffect(() => {
+        const sedeID = formData.sede;
+
+        if (!sedeID || isNaN(Number(sedeID))) {
+            setMesasDisponibles([]);
+            return;
+        }
+
+        const fetchMesas = async () => {
+            try {
+                setLoadingMesas(true);
+                const res = await fetch(`http://localhost:8000/pedido/mesas/${sedeID}`);
+                const data = await res.json();
+
+                if (data.mesas) {
+                    // generar [1, 2, 3, ... mesas]
+                    const mesasArr = Array.from({ length: data.mesas }, (_, i) => i + 1);
+                    setMesasDisponibles(mesasArr);
+                } else {
+                    setMesasDisponibles([]);
+                }
+            } catch (err) {
+                console.error("Error loading tables:", err);
+                setMesasDisponibles([]);
+            } finally {
+                setLoadingMesas(false);
+            }
+        };
+
+        fetchMesas();
+
+    }, [formData.sede]);
+
 
     // ----------------------------------------------------------------------------------------------------
     // CARGAR INVENTARIO
@@ -140,9 +264,6 @@ function TakeTableOrder() {
         }
     }, [categoriaText]);
 
-    // ----------------------------------------------------------------------------------------------------
-    // RENDER
-    // ----------------------------------------------------------------------------------------------------
     return (
         <div className="dashboardMain">
             <NavBar usuario={usuario} />
@@ -175,12 +296,69 @@ function TakeTableOrder() {
 
                     <div className="row">
                         <label className="label">Table Number:</label>
-                        <select className="select"></select>
+                        <select
+                            name="mesa"
+                            value={formData.mesa || ""}
+                            onChange={handleChange}
+                            disabled={!formData.sede || mesasDisponibles.length === 0}
+                        >
+                            <option value="">
+                                {loadingMesas ? "Loading..." : "Select a table"}
+                            </option>
+
+                            {mesasDisponibles.map(num => (
+                                <option key={num} value={num}>
+                                    Table {num}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className="row status-row">
                         <label className="label">Table Status:</label>
-                        <span className="status-pill">Occupied</span>
+                        <span
+                            className={
+                                !formData.sede || !formData.mesa
+                                    ? "status-na"
+                                    : estadoMesa === 1
+                                        ? "status-occupied"
+                                        : "status-unoccupied"
+                            }
+                            style={
+                                !formData.sede || !formData.mesa
+                                    ? { backgroundColor: '#eee', color: '#999', padding: '6px 10px', borderRadius: '8px' }
+                                    : {}
+                            }
+                        >
+                            {!formData.sede || !formData.mesa
+                                ? "N/A"
+                                : estadoMesa === 1
+                                    ? "Occupied"
+                                    : "Unoccupied"}
+                        </span>
+                    </div>
+                    <div className="button-row" style={{marginTop:'20px'}}>
+                        {estadoMesa === 1 ? (
+                            <button
+                                type="button"
+                                className={`save-btn${!formData.sede || !formData.mesa ? ' btn-disabled' : ''}`}
+                                onClick={handleContinueOrder}
+                                disabled={!formData.sede || !formData.mesa}
+                                style={!formData.sede || !formData.mesa ? { backgroundColor: '#ccc', color: '#666', cursor: 'not-allowed' } : {}}
+                            >
+                                Continue order
+                            </button>
+                        ) : (
+                            <button
+                                type="submit"
+                                className={`save-btn${!formData.sede || !formData.mesa ? ' btn-disabled' : ''}`}
+                                onClick={handleStartOrder}
+                                disabled={!formData.sede || !formData.mesa}
+                                style={!formData.sede || !formData.mesa ? { backgroundColor: '#ccc', color: '#666', cursor: 'not-allowed' } : {}}
+                            >
+                                Start order
+                            </button>
+                        )}
                     </div>
                 </section>
 
@@ -249,6 +427,8 @@ function TakeTableOrder() {
 
                                             <td>{item.cantidad}</td>
                                             <td>$ {item.valorVenta}</td>
+                                            <td><input type="number" className="qty-btn" min={0} placeholder="Qty"/></td>
+                                            <td><button type="submit" className="save-btn order-btn">Add to order</button></td>
                                         </tr>
                                     ))
                                 ) : (
@@ -260,6 +440,7 @@ function TakeTableOrder() {
                         </table>
                     </div>
                 </section>
+                {/* ------------------------ SECCIÓN 3 ------------------------ */}
                 <section className="section">
                     <h2 className="title">Order Preview</h2>
                     <div className="table-container">
@@ -303,6 +484,26 @@ function TakeTableOrder() {
                         <button type="submit" className="save-btn">Confirm order</button>
                         <button type="button" className="cancel-btn" >Cancel</button>
                     </div>
+
+                    {/* Modal de Success */}
+                    {success && (
+                        <div className="modal-success">
+                            <div className="modal-content">
+                                <p>{success}</p>
+                                <button onClick={handleCloseModal}>OK</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal de Error */}
+                    {error && (
+                        <div className="modal-error">
+                            <div className="modal-content">
+                                <p>{error}</p>
+                                <button onClick={handleCloseModal}>OK</button>
+                            </div>
+                        </div>
+                    )}
                 </section>
             </div>
         </div>
