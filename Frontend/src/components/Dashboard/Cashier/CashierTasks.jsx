@@ -9,8 +9,8 @@ function CashierTasks() {
       <div className="button-grid">
         <button onClick={() => navigate("/dashboard/cashier/sale")}>Complete Sale</button>
       </div>
-      <div className="button-grida">
-        <button className="build">Generate Reports</button>
+      <div className="button-grid">
+        <button onClick={() => navigate("/dashboard/cashier/reports")}>Generate Reports</button>
       </div>
       <div className="button-grid">
         <button onClick={() => navigate("/dashboard/cashier/stock")}>Register Inventory Entries</button>

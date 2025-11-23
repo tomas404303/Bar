@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Body
 from pydantic import BaseModel
 from Database import connect_to_sqlserver
 import pyodbc
@@ -25,6 +25,13 @@ class ActualizarPedido(BaseModel):
     numeroMesa: int
     productos: list[ItemPedido]
 
+# Modelo para agregar producto a preorden
+class PreOrdenItem(BaseModel):
+    idVenta: int
+    idProducto: str
+    cantidad: int
+    precioVenta: float
+    subTotal: float
 
 
 def merge_sort(lista, clave):
@@ -206,6 +213,103 @@ def crear_venta(sede: int = Query(...), numeroMesa: int = Query(...)):
         else:
             estado_mesa = 0
         return {"status": "OK", "idVenta": idVenta, "estadoMesa": estado_mesa}
+    except Exception as e:
+        db.rollback()
+        return {"status": "F", "error": str(e)}
+    finally:
+        db.close()
+
+# Endpoint para agregar producto a detallesVentaPreOrden
+@router.post("/preorden/agregar-producto")
+def agregar_producto_preorden(item: PreOrdenItem = Body(...)):
+    db = connect_to_sqlserver()
+    cursor = db.cursor()
+    try:
+        # Validar inventario
+        cursor.execute("""
+            SELECT v.idSede FROM venta v WHERE v.id = ?
+        """, (item.idVenta,))
+        sede_row = cursor.fetchone()
+        if not sede_row:
+            return {"status": "F", "error": "Venta no encontrada"}
+        idSucursal = sede_row[0]
+        cursor.execute("""
+            SELECT cantidad FROM inventario WHERE idSucursal = ? AND idProducto = ?
+        """, (idSucursal, item.idProducto))
+        inv_row = cursor.fetchone()
+        if not inv_row:
+            return {"status": "F", "error": "Producto no encontrado en inventario"}
+        inventario_actual = inv_row[0]
+        if item.cantidad > inventario_actual or item.cantidad <= 0:
+            return {"status": "F", "error": "Cantidad inválida o insuficiente inventario"}
+        # Insertar en detallesVentaPreOrden
+        cursor.execute("""
+            INSERT INTO detallesVentaPreOrden (idVenta, idProducto, cantidad, precioVenta, subTotal)
+            VALUES (?, ?, ?, ?, ?)
+        """, (item.idVenta, item.idProducto, item.cantidad, item.precioVenta, item.subTotal))
+        db.commit()
+        return {"status": "OK"}
+    except Exception as e:
+        db.rollback()
+        return {"status": "F", "error": str(e)}
+    finally:
+        db.close()
+
+@router.get("/preorden/detalles/{idVenta}")
+def listar_detalles_preorden(idVenta: int):
+    db = connect_to_sqlserver()
+    cursor = db.cursor()
+    try:
+        cursor.execute("""
+            SELECT idVenta, idProducto, p.nombre, cantidad, precioVenta, subTotal
+            FROM detallesVentaPreOrden
+            JOIN productos p ON detallesVentaPreOrden.idProducto = p.id
+            WHERE idVenta = ?
+        """, (idVenta,))
+        rows = cursor.fetchall()
+        detalles = [
+            {
+                "idVenta": r[0],
+                "idProducto": r[1],
+                "nombre": r[2],
+                "cantidad": r[3],
+                "precioVenta": r[4],
+                "subTotal": r[5]
+            }
+            for r in rows
+        ]
+        return {"status": "OK", "detalles": detalles}
+    except Exception as e:
+        return {"status": "F", "error": str(e)}
+    finally:
+        db.close()
+
+@router.post("/preorden/confirmar/{idVenta}")
+def confirmar_preorden(idVenta: int):
+    db = connect_to_sqlserver()
+    cursor = db.cursor()
+    try:
+        # Obtener todos los productos de la preorden
+        cursor.execute("""
+            SELECT idProducto, cantidad, precioVenta, subTotal
+            FROM detallesVentaPreOrden
+            WHERE idVenta = ?
+        """, (idVenta,))
+        productos = cursor.fetchall()
+        if not productos:
+            return {"status": "F", "error": "No products in pre-order"}
+        # Insertar en detallesVenta
+        for p in productos:
+            cursor.execute("""
+                INSERT INTO detallesVenta (idVenta, idProducto, fechaProcesado, cantidad, precioVenta, subTotal)
+                VALUES (?, ?, GETDATE(), ?, ?, ?)
+            """, (idVenta, p[0], p[1], p[2], p[3]))
+        # Eliminar de detallesVentaPreOrden
+        cursor.execute("""
+            DELETE FROM detallesVentaPreOrden WHERE idVenta = ?
+        """, (idVenta,))
+        db.commit()
+        return {"status": "OK"}
     except Exception as e:
         db.rollback()
         return {"status": "F", "error": str(e)}

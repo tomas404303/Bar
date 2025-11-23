@@ -8,6 +8,12 @@ function TakeTableOrder() {
     const sede = localStorage.getItem("sede");
 
     const [estadoMesa, setEstadoMesa] = useState(null);
+    const [orderActive, setOrderActive] = useState(false); // true si hay venta activa
+    const [idVenta, setIdVenta] = useState(null); // id de la venta activa
+
+    const [selectedQty, setSelectedQty] = useState({});
+
+    const [preOrderItems, setPreOrderItems] = useState([]);
 
     const [filteredInventario, setFilteredInventario] = useState([]);
 
@@ -78,10 +84,11 @@ function TakeTableOrder() {
             const data = await res.json();
             if (data.status === "OK") {
                 setSuccess("Sale initiated successfully.");
-                // Actualizar el estado de la mesa inmediatamente
                 if (typeof data.estadoMesa !== "undefined") {
                     setEstadoMesa(data.estadoMesa);
                 }
+                setOrderActive(true);
+                setIdVenta(data.idVenta);
             } else {
                 setError("A sale is already active.");
             }
@@ -91,7 +98,7 @@ function TakeTableOrder() {
     };
 
     // ----------------------------------------------------------------------------------------------------
-    // Continuar orden (no implementado)
+    // Continuar orden
     // ----------------------------------------------------------------------------------------------------
 
     // Handler para continuar orden (no implementado)
@@ -99,12 +106,178 @@ function TakeTableOrder() {
         e.preventDefault();
         setSuccess("");
         setError("");
-        setError("Funcionalidad de continuar orden aún no implementada.");
+        // Simula continuar orden: habilita botones y recupera idVenta activo
+        // Aquí deberías consultar el backend para obtener el idVenta activo de la mesa
+        const fetchVentaActiva = async () => {
+            try {
+                const url = `http://localhost:8000/pedido/activos`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.status === "OK") {
+                    const venta = data.pedidos.find(v => v.idSede == formData.sede && v.numeroMesa == formData.mesa);
+                    if (venta) {
+                        setOrderActive(true);
+                        setIdVenta(venta.idVenta);
+                        setSuccess("Continue order enabled.");
+                    } else {
+                        setError("No active order found for this table.");
+                    }
+                } else {
+                    setError("Error fetching active orders.");
+                }
+            } catch (err) {
+                setError("Error fetching active orders.");
+            }
+        };
+        fetchVentaActiva();
     };
     // Handler para cerrar los modales
     const handleCloseModal = () => {
         setSuccess("");
         setError("");
+    };
+
+    // ----------------------------------------------------------------------------------------------------
+    // AGREGAR PRODUCTO A PREORDEN
+    // ----------------------------------------------------------------------------------------------------
+    // Función para agregar producto a la preorden
+    const handleAddToPreOrder = async (item) => {
+        if (!orderActive || !idVenta || !item) return;
+        const qty = parseInt(selectedQty[item.idProducto], 10);
+        if (!qty || qty <= 0) {
+            setError('Enter a valid quantity');
+            return;
+        }
+        // Llamar endpoint backend
+        // Obtener valorVenta real del producto
+        // Convertir correctamente el valorVenta preservando los miles
+        let valorVenta = item.valorVenta;
+        if (typeof valorVenta === 'string') {
+            // Quitar separadores de miles y convertir a número
+            valorVenta = parseInt(valorVenta.replace(/\./g, '').replace(/,/g, ''), 10);
+        }
+        const payload = {
+            idVenta,
+            idProducto: item.idProducto,
+            cantidad: qty,
+            precioVenta: valorVenta,
+            subTotal: valorVenta * qty
+        };
+        try {
+            const res = await fetch('http://localhost:8000/pedido/preorden/agregar-producto', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.status === 'OK') {
+                setSuccess('Product added to pre-order successfully');
+                // Limpiar campo Qty
+                setSelectedQty(qtyObj => ({ ...qtyObj, [item.idProducto]: '' }));
+                // Actualizar inventario local
+                setInventario(prevInv => prevInv.map(invItem =>
+                    invItem.idProducto === item.idProducto && invItem.idSucursal === item.idSucursal
+                        ? { ...invItem, cantidad: invItem.cantidad - qty }
+                        : invItem
+                ));
+                setFilteredInventario(prevInv => prevInv.map(invItem =>
+                    invItem.idProducto === item.idProducto && invItem.idSucursal === item.idSucursal
+                        ? { ...invItem, cantidad: invItem.cantidad - qty }
+                        : invItem
+                ));
+                // Actualizar tabla local de preorden
+                setPreOrderItems(prev => {
+                    // Si ya existe el producto, suma la cantidad
+                    const idx = prev.findIndex(p => p.idProducto === item.idProducto);
+                    if (idx !== -1) {
+                        const updated = [...prev];
+                        updated[idx].cantidad += qty;
+                        updated[idx].subTotal += valorVenta * qty;
+                        return updated;
+                    }
+                    return [...prev, {
+                        idProducto: item.idProducto,
+                        nombre: item.nombre,
+                        cantidad: qty,
+                        precioVenta: valorVenta,
+                        subTotal: valorVenta * qty
+                    }];
+                });
+            } else {
+                setError(data.error || 'Error adding product');
+            }
+        } catch (err) {
+            setError('Error adding product');
+        }
+    };
+
+    // ----------------------------------------------------------------------------------------------------
+    // Listar todas las preodenes de la idVenta
+    // ----------------------------------------------------------------------------------------------------
+    useEffect(() => {
+        if (!idVenta) {
+            setPreOrderItems([]);
+            return;
+        }
+        const fetchDetallesPreOrden = async () => {
+            try {
+                const res = await fetch(`http://localhost:8000/pedido/preorden/detalles/${idVenta}`);
+                const data = await res.json();
+                if (data.status === 'OK') {
+                    setPreOrderItems(data.detalles);
+                } else {
+                    setPreOrderItems([]);
+                }
+            } catch (err) {
+                setPreOrderItems([]);
+            }
+        };
+        fetchDetallesPreOrden();
+    }, [idVenta]);
+
+
+    // ----------------------------------------------------------------------------------------------------
+    // AGREGAR PRODUCTO A ORDEN FINAL
+    // ----------------------------------------------------------------------------------------------------
+    // Handler para confirmar la orden
+    const handleConfirmOrder = async () => {
+        if (!idVenta || preOrderItems.length === 0) return;
+        try {
+            const res = await fetch(`http://localhost:8000/pedido/preorden/confirmar/${idVenta}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (data.status === 'OK') {
+                setSuccess('Order confirmed successfully');
+                setPreOrderItems([]);
+                setOrderActive(false);
+                setIdVenta(null);
+            } else {
+                setError(data.error || 'Error confirming order');
+            }
+        } catch (err) {
+            setError('Error confirming order');
+        }
+    };
+
+    // ----------------------------------------------------------------------------------------------------
+    // Limpiar todos los estados locales.
+    // ----------------------------------------------------------------------------------------------------
+    // Handler para cancelar la orden (solo limpia estados locales)
+    const handleCancelOrder = () => {
+        setSuccess('Order cancelled successfully');
+        setPreOrderItems([]);
+        setOrderActive(false);
+        setIdVenta(null);
+        setSelectedQty({});
+        setSelectedProduct(null);
+        setFormData({
+            sede: cargo === "Administrator" ? "" : (sede || ""),
+            idCategoria: null,
+            categoriaLabel: "",
+            mesa: ""
+        });
     };
 
     // ----------------------------------------------------------------------------------------------------
@@ -263,6 +436,8 @@ function TakeTableOrder() {
             });
         }
     }, [categoriaText]);
+
+    
 
     return (
         <div className="dashboardMain">
@@ -427,8 +602,32 @@ function TakeTableOrder() {
 
                                             <td>{item.cantidad}</td>
                                             <td>$ {item.valorVenta}</td>
-                                            <td><input type="number" className="qty-btn" min={0} placeholder="Qty"/></td>
-                                            <td><button type="submit" className="save-btn order-btn">Add to order</button></td>
+                                            <td>
+                                                <input
+                                                    type="number"
+                                                    className="qty-btn"
+                                                    min={0}
+                                                    placeholder="Qty"
+                                                    disabled={!orderActive}
+                                                    value={selectedQty[item.idProducto] || ''}
+                                                    onChange={e => {
+                                                        setSelectedQty(qty => ({ ...qty, [item.idProducto]: e.target.value }));
+                                                        setSelectedProduct(item);
+                                                    }}
+                                                    style={!orderActive ? { backgroundColor: '#eee', color: '#999', cursor: 'not-allowed' } : {}}
+                                                />
+                                            </td>
+                                            <td>
+                                                <button
+                                                    type="button"
+                                                    className={`save-btn order-btn${!orderActive ? ' btn-disabled' : ''}`}
+                                                    disabled={!orderActive}
+                                                    style={!orderActive ? { backgroundColor: '#ccc', color: '#666', cursor: 'not-allowed' } : {}}
+                                                    onClick={() => handleAddToPreOrder(item)}
+                                                >
+                                                    Add to order
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))
                                 ) : (
@@ -454,35 +653,51 @@ function TakeTableOrder() {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>Rums</td>
-                                    <td>1</td>
-                                    <td>30.000</td>
-                                    <td>30.000</td>
-                                </tr>
-                                <tr>
-                                    <td>Rums</td>
-                                    <td>1</td>
-                                    <td>30.000</td>
-                                    <td>30.000</td>
-                                </tr>
-                                <tr>
-                                    <td>Rums</td>
-                                    <td>1</td>
-                                    <td>30.000</td>
-                                    <td>30.000</td>
-                                </tr>
-                                <tr className="total-row">
-                                    <td colSpan="2"></td>
-                                    <td style={{fontWeight:'bold', color:'#0B5BAA'}}>Total</td>
-                                    <td className="total-value">30.000</td>
-                                </tr>
+                                {preOrderItems.length > 0 ? (
+                                    <>
+                                        {preOrderItems.map(item => (
+                                            <tr key={item.idProducto}>
+                                                <td>{item.nombre}</td>
+                                                <td>{item.cantidad}</td>
+                                                <td>{item.precioVenta.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })}</td>
+                                                <td>{item.subTotal.toLocaleString('es-CO', { style: 'currency', currency: 'COP' })}</td>
+                                            </tr>
+                                        ))}
+                                        <tr className="total-row">
+                                            <td colSpan="2"></td>
+                                            <td style={{fontWeight:'bold', color:'#0B5BAA'}}>Total</td>
+                                            <td className="total-value">
+                                                {preOrderItems.reduce((acc, item) => acc + item.subTotal, 0).toLocaleString('es-CO', { style: 'currency', currency: 'COP' })}
+                                            </td>
+                                        </tr>
+                                    </>
+                                ) : (
+                                    <tr>
+                                        <td colSpan="4">No products in pre-order</td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
                     <div className="button-row" style={{marginTop:'40px'}}>
-                        <button type="submit" className="save-btn">Confirm order</button>
-                        <button type="button" className="cancel-btn" >Cancel</button>
+                        <button
+                            type="button"
+                            className={`save-btn${preOrderItems.length === 0 ? ' btn-disabled' : ''}`}
+                            disabled={preOrderItems.length === 0}
+                            onClick={handleConfirmOrder}
+                            style={preOrderItems.length === 0 ? { backgroundColor: '#ccc', color: '#666', cursor: 'not-allowed' } : {}}
+                        >
+                            Confirm order
+                        </button>
+                        <button
+                            type="button"
+                            className={`cancel-btn${preOrderItems.length === 0 ? ' btn-disabled' : ''}`}
+                            disabled={preOrderItems.length === 0}
+                            onClick={handleCancelOrder}
+                            style={preOrderItems.length === 0 ? { backgroundColor: '#ccc', color: '#666', cursor: 'not-allowed' } : {}}
+                        >
+                            Cancel
+                        </button>
                     </div>
 
                     {/* Modal de Success */}

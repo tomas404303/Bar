@@ -159,6 +159,52 @@ begin
 end
 go
 
+-- Trigger: Validar inventario antes de insertar en detallesVentaPreOrden
+create or alter trigger validarInventarioAntesDePreOrden
+on detallesVentaPreOrden
+instead of insert
+as
+begin
+    set nocount on;
+    declare @idVenta int, @idProducto varchar(25), @cantidad int, @idSucursal int, @inventarioActual int;
+    
+    -- Solo soporta una fila por inserción, para múltiples filas usar cursor
+    select @idVenta = i.idVenta, @idProducto = i.idProducto, @cantidad = i.cantidad from inserted i;
+    select @idSucursal = v.idSede from venta v where v.id = @idVenta;
+    select @inventarioActual = cantidad from inventario where idSucursal = @idSucursal and idProducto = @idProducto;
+    
+    if @cantidad > @inventarioActual or @cantidad <= 0
+    begin
+        raiserror('Cantidad inválida o insuficiente inventario para el producto en la sede.', 16, 1);
+        return;
+    end
+    else
+    begin
+        insert into detallesVentaPreOrden (idVenta, idProducto, cantidad, precioVenta, subTotal)
+        select idVenta, idProducto, cantidad, precioVenta, subTotal from inserted;
+    end
+end
+GO
+
+-- Trigger: Descontar inventario después de insertar en detallesVentaPreOrden
+create or alter trigger descontarInventarioDespuesDePreOrden
+on detallesVentaPreOrden
+after insert
+as
+begin
+    set nocount on;
+    declare @idVenta int, @idProducto varchar(25), @cantidad int, @idSucursal int;
+    
+    -- Solo soporta una fila por inserción, para múltiples filas usar cursor
+    select @idVenta = i.idVenta, @idProducto = i.idProducto, @cantidad = i.cantidad from inserted i;
+    select @idSucursal = v.idSede from venta v where v.id = @idVenta;
+    
+    update inventario
+    set cantidad = cantidad - @cantidad
+    where idSucursal = @idSucursal and idProducto = @idProducto;
+end
+GO
+
 insert into tDocumento (abrevicion, definicion)
 values
     ('CC', 'Cédula de ciudadanía'),
