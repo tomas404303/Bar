@@ -278,8 +278,33 @@ def listar_detalles_preorden(idVenta: int):
             }
             for r in rows
         ]
-        return {"status": "OK", "detalles": detalles}
+        return {"status": "OK", "idVenta": idVenta, "detalles": detalles}
     except Exception as e:
+        return {"status": "F", "error": str(e)}
+    finally:
+        db.close()
+
+
+@router.post("/cerrar")
+def cerrar_venta(idVenta: int = Query(...), medioRecaudado: int = Query(...), total: float = Query(...)):
+    db = connect_to_sqlserver()
+    cursor = db.cursor()
+    try:
+        cursor.execute("""
+            UPDATE venta
+            SET estadoVenta = 0,
+                medioRecaudado = ?,
+                total = ?,
+                fechaFinVenta = GETDATE()
+            WHERE id = ?
+        """, (medioRecaudado, total, idVenta))
+        if cursor.rowcount == 0:
+            db.rollback()
+            return {"status": "F", "error": "No active sale found."}
+        db.commit()
+        return {"status": "OK"}
+    except Exception as e:
+        db.rollback()
         return {"status": "F", "error": str(e)}
     finally:
         db.close()
@@ -569,5 +594,53 @@ def listar_pedidos_activos():
     except Exception as e:
         return {"status": "F", "error": str(e)}
 
+    finally:
+        db.close()
+
+
+@router.get("/detalles/mesa")
+def detalles_venta_por_mesa(idSede: int = Query(...), numeroMesa: int = Query(...)):
+    db = connect_to_sqlserver()
+    cursor = db.cursor()
+    try:
+        cursor.execute("""
+            SELECT v.id
+            FROM venta v
+            WHERE v.idSede = ?
+              AND v.numeroMesaAsociada = ?
+              AND v.estadoVenta = 1
+              AND v.fechaFinVenta IS NULL
+        """, (idSede, numeroMesa))
+        venta_row = cursor.fetchone()
+        if not venta_row:
+            return {"status": "OK", "idVenta": None, "detalles": []}
+
+        idVenta = venta_row[0]
+        cursor.execute("""
+            SELECT dv.idProducto, p.nombre, dv.precioVenta,
+                   SUM(dv.cantidad) AS cantidad, SUM(dv.subTotal) AS subTotal
+            FROM detallesVenta dv
+            JOIN productos p ON dv.idProducto = p.id
+            WHERE dv.idVenta = ?
+            GROUP BY dv.idProducto, p.nombre, dv.precioVenta
+        """, (idVenta,))
+        rows = cursor.fetchall()
+
+        detalles = [
+            {
+                "idProducto": r[0],
+                "nombre": r[1],
+                "precioVenta": float(r[2]),
+                "cantidad": int(r[3]),
+                "subTotal": float(r[4])
+            }
+            for r in rows
+        ]
+
+        return {"status": "OK", "idVenta": idVenta, "detalles": detalles}
+
+
+    except Exception as e:
+        return {"status": "F", "error": str(e)}
     finally:
         db.close()

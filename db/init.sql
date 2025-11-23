@@ -79,7 +79,7 @@ go
 create table venta (
     id int identity(1,1) primary key,
     idSede int not null,
-    estadoVenta bit not null,-- 1: Finalzado, 0: Proceso
+    estadoVenta bit not null,-- 0: Finalzado, 1: Proceso
     medioRecaudado int not null,-- 1: efectivo, 2: Tarjeta débito, 3: Tarjeta crédito
     total decimal(18,2) not null,
     numeroMesaAsociada int not null,
