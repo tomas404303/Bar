@@ -12,6 +12,7 @@ function TakeTableOrder() {
     const [idVenta, setIdVenta] = useState(null); // id de la venta activa
 
     const [selectedQty, setSelectedQty] = useState({});
+    const [selectedProduct, setSelectedProduct] = useState(null);
 
     const [preOrderItems, setPreOrderItems] = useState([]);
 
@@ -185,24 +186,12 @@ function TakeTableOrder() {
                         ? { ...invItem, cantidad: invItem.cantidad - qty }
                         : invItem
                 ));
-                // Actualizar tabla local de preorden
-                setPreOrderItems(prev => {
-                    // Si ya existe el producto, suma la cantidad
-                    const idx = prev.findIndex(p => p.idProducto === item.idProducto);
-                    if (idx !== -1) {
-                        const updated = [...prev];
-                        updated[idx].cantidad += qty;
-                        updated[idx].subTotal += valorVenta * qty;
-                        return updated;
-                    }
-                    return [...prev, {
-                        idProducto: item.idProducto,
-                        nombre: item.nombre,
-                        cantidad: qty,
-                        precioVenta: valorVenta,
-                        subTotal: valorVenta * qty
-                    }];
-                });
+                // Recargar preorden desde el backend para obtener datos exactos
+                const resPreorden = await fetch(`http://localhost:8000/pedido/preorden/detalles/${idVenta}`);
+                const dataPreorden = await resPreorden.json();
+                if (dataPreorden.status === 'OK') {
+                    setPreOrderItems(dataPreorden.detalles);
+                }
             } else {
                 setError(data.error || 'Error adding product');
             }

@@ -261,10 +261,17 @@ def listar_detalles_preorden(idVenta: int):
     cursor = db.cursor()
     try:
         cursor.execute("""
-            SELECT idVenta, idProducto, p.nombre, cantidad, precioVenta, subTotal
+            SELECT 
+                idVenta, 
+                idProducto, 
+                p.nombre, 
+                SUM(cantidad) as cantidad_total, 
+                precioVenta, 
+                SUM(subTotal) as subTotal_total
             FROM detallesVentaPreOrden
             JOIN productos p ON detallesVentaPreOrden.idProducto = p.id
             WHERE idVenta = ?
+            GROUP BY idVenta, idProducto, p.nombre, precioVenta
         """, (idVenta,))
         rows = cursor.fetchall()
         detalles = [
