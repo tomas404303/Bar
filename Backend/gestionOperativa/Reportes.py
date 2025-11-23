@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Query
 from typing import Optional, List, Dict, Any
 from Database import connect_to_sqlserver
-from Autenticacion.utils_token import obtener_usuario_desde_token
 from datetime import datetime
 import io, csv
 from fastapi.responses import StreamingResponse
@@ -125,20 +124,20 @@ def obtener_filas_reporte(db, fecha_inicio, fecha_fin, sede, codigo_producto):
 
 @router.get("/ventas/exportar")
 def exportar_csv(
-    authorization: str = Header(None),
+    cargo: str = Query(...),
+    sede: str = Query(...),
     fechaInicio: Optional[str] = None,
     fechaFin: Optional[str] = None,
     codigoProducto: Optional[int] = None
 ):
     """
     Exporta un CSV dependiendo del rol del usuario:
-    - Administrador (cargo=3) → exporta TODAS las sedes.
-    - Cajero (cargo=2) → exporta SOLO su sede.
+    - Administrator → exporta TODAS las sedes.
+    - Cashier → exporta SOLO su sede.
     """
 
-    usuario = obtener_usuario_desde_token(authorization)
-    rol = usuario["cargo"]        
-    sede_usuario = usuario["sede"]
+    rol = 3 if cargo == "Administrator" else 2
+    sede_usuario = sede
 
     db = connect_to_sqlserver()
     try:
@@ -147,7 +146,17 @@ def exportar_csv(
         filas = obtener_filas_reporte(db, fechaInicio, fechaFin, sede_consulta, codigoProducto)
 
         if rol == 2:
-            filas = [f for f in filas if f["idSede"] == sede_usuario]
+            # Convertir nombre de sede a ID si es necesario
+            cursor = db.cursor()
+            cursor.execute("SELECT id FROM sucursales WHERE nombre = ?", (sede_usuario,))
+            sede_result = cursor.fetchone()
+            cursor.close()
+            
+            if sede_result:
+                sede_id = sede_result[0]
+                filas = [f for f in filas if f["idSede"] == sede_id]
+            else:
+                filas = []
 
         agrupar_recursivo(filas, ["sede", "codigoProducto"])
 
