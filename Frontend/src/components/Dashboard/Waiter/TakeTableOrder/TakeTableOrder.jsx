@@ -193,7 +193,7 @@ function TakeTableOrder() {
                     setPreOrderItems(dataPreorden.detalles);
                 }
             } else {
-                setError(data.error || 'Error adding product');
+                setError('Error adding product');
             }
         } catch (err) {
             setError('Error adding product');

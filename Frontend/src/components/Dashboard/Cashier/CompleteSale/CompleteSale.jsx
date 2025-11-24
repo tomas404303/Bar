@@ -188,7 +188,7 @@ function CompleteSale() {
                 throw new Error(data.error || "Unable to close sale");
             }
         } catch (err) {
-            setFeedback(err.message || "Error closing sale.");
+            setFeedback("Error closing sale.");
             setFeedbackType("error");
         }
     };
