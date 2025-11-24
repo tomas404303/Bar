@@ -1,6 +1,11 @@
 import './App.css'
-import { Router, Routes, Route, Navigate } from 'react-router-dom'
+import { Router, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import Login from './pages/Login/Login.jsx';
+
+import IdleProvider from './hook/IdleProvider.jsx'
+import ProtectedRoute from './components/ProtectRoute/ProtectedRoute.jsx'
+import ProtectedRoleRoute from './components/ProtectRoute/ProtectedRoleRoute.jsx'
+
 import Dashboard from './pages/Dashboard/Dashboard.jsx';
 import ManageLocations from './components/Dashboard/Administrator/ManageLocation/ManageLocations.jsx';
 import ManageUsers from './components/Dashboard/Administrator/ManageUser/ManageUsers.jsx';
@@ -16,16 +21,24 @@ function App() {
       <Routes>
         <Route path='/' element={<Navigate to="/login" replace />}></Route>
         <Route path='/login' element={<Login />}></Route>
+        <Route element={
+          <ProtectedRoute>
+            <IdleProvider>
+              <Outlet/>
+            </IdleProvider>
+          </ProtectedRoute>}>
+          <Route path='/dashboard/*' element={<Dashboard />}></Route>
+          <Route path='/dashboard/admin/locations' element={<ProtectedRoleRoute roles={["Administrator"]}><ManageLocations /></ProtectedRoleRoute>}></Route>
+          <Route path='/dashboard/admin/users' element={<ProtectedRoleRoute roles={["Administrator"]}><ManageUsers /></ProtectedRoleRoute>}></Route>
+          <Route path='/dashboard/admin/tables' element={<ProtectedRoleRoute roles={["Administrator"]}><ManageTables /></ProtectedRoleRoute>}></Route>
+          <Route path='/dashboard/admin/inventory' element={<ProtectedRoleRoute roles={["Administrator"]}><ManageInventory /></ProtectedRoleRoute>}></Route>
+          
+          <Route path='/dashboard/cashier/stock' element={<ProtectedRoleRoute roles={["Administrator", "Cashier"]}><RegisterInventoryEntries /></ProtectedRoleRoute>}></Route>
+          <Route path='/dashboard/cashier/sale' element={<ProtectedRoleRoute roles={["Administrator", "Cashier"]}><CompleteSale /></ProtectedRoleRoute>}></Route>
+          <Route path='/dashboard/cashier/reports' element={<ProtectedRoleRoute roles={["Administrator", "Cashier"]}><GenerateReports /></ProtectedRoleRoute>}></Route>
 
-        <Route path='/dashboard/*' element={<Dashboard />}></Route>
-        <Route path='/dashboard/admin/locations' element={<ManageLocations />}></Route>
-        <Route path='/dashboard/admin/users' element={<ManageUsers />}></Route>
-        <Route path='/dashboard/admin/tables' element={<ManageTables />}></Route>
-        <Route path='/dashboard/admin/inventory' element={<ManageInventory />}></Route>
-        <Route path='/dashboard/cashier/stock' element={<RegisterInventoryEntries />}></Route>
-        <Route path='/dashboard/cashier/sale' element={<CompleteSale />}></Route>
-        <Route path='/dashboard/waiter/order' element={<TakeTableOrder />}></Route>
-        <Route path='/dashboard/cashier/reports' element={<GenerateReports />}></Route>
+          <Route path='/dashboard/waiter/order' element={<ProtectedRoleRoute roles={["Administrator", "Waiter"]}><TakeTableOrder /></ProtectedRoleRoute>}></Route>
+        </Route>
       </Routes>
   );
 }
