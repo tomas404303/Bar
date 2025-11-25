@@ -27,8 +27,10 @@ function AddInventory({ onProducto }) {
             const res = await fetch("http://localhost:8000/productos/categorias/listar");
             const data = await res.json();
             setCategorias(data);
+            return data;
         } catch (err) {
             console.error("Error loading categories", err);
+            return [];
         }
     };
 
@@ -48,13 +50,14 @@ function AddInventory({ onProducto }) {
             const result = await response.json();
 
             if (result.status === "OK") {
-                await loadCategorias();
+                const updatedCategorias = await loadCategorias();
                 setSuccess("Category created correctly");
-                const nueva = categorias.find(c => c.categoria === nombreNueva);
+                const nueva = updatedCategorias.find(c => c.categoria === nombreNueva);
                 setFormData((prev) => ({
                     ...prev,
                     idCategoria: nueva?.id || ""
                 }));
+                setCategoriaText(nueva?.categoria || nombreNueva);
             } else {
                 setError(result.reason || "Error creating category");
             }
@@ -122,7 +125,7 @@ function AddInventory({ onProducto }) {
     const handleClean = () => {
         setFormData({
             nombreProducto: "",
-            idcategoria: "",
+            idCategoria: "",
             costo: "",
             precioVenta: "",
         })
