@@ -238,10 +238,9 @@ function TakeTableOrder() {
             });
             const data = await res.json();
             if (data.status === 'OK') {
-                setSuccess('Order confirmed successfully');
-                setPreOrderItems([]);
-                setOrderActive(false);
-                setIdVenta(null);
+                if (typeof window !== 'undefined') {
+                    window.location.reload();
+                }
             } else {
                 setError(data.error || 'Error confirming order');
             }
@@ -255,18 +254,9 @@ function TakeTableOrder() {
     // ----------------------------------------------------------------------------------------------------
     // Handler para cancelar la orden (solo limpia estados locales)
     const handleCancelOrder = () => {
-        setSuccess('Order cancelled successfully');
-        setPreOrderItems([]);
-        setOrderActive(false);
-        setIdVenta(null);
-        setSelectedQty({});
-        setSelectedProduct(null);
-        setFormData({
-            sede: cargo === "Administrator" ? "" : (sede || ""),
-            idCategoria: null,
-            categoriaLabel: "",
-            mesa: ""
-        });
+        if (typeof window !== "undefined") {
+            window.location.reload();
+        }
     };
 
     // ----------------------------------------------------------------------------------------------------
@@ -416,6 +406,8 @@ function TakeTableOrder() {
         label: c.categoria
     }));
 
+    const hasAvailableProducts = Array.isArray(filteredInventario) && filteredInventario.length > 0;
+
     useEffect(() => {
         if (categoriaText.trim() === "") {
             setFormData(prev => {
@@ -505,20 +497,20 @@ function TakeTableOrder() {
                         {estadoMesa === 1 ? (
                             <button
                                 type="button"
-                                className={`save-btn${!formData.sede || !formData.mesa ? ' btn-disabled' : ''}`}
+                                className={`save-btn${(!formData.sede || !formData.mesa || !hasAvailableProducts) ? ' btn-disabled' : ''}`}
                                 onClick={handleContinueOrder}
-                                disabled={!formData.sede || !formData.mesa}
-                                style={!formData.sede || !formData.mesa ? { backgroundColor: '#ccc', color: '#666', cursor: 'not-allowed' } : {}}
+                                disabled={!formData.sede || !formData.mesa || !hasAvailableProducts}
+                                style={!formData.sede || !formData.mesa || !hasAvailableProducts ? { backgroundColor: '#ccc', color: '#666', cursor: 'not-allowed' } : {}}
                             >
                                 Continue order
                             </button>
                         ) : (
                             <button
                                 type="submit"
-                                className={`save-btn${!formData.sede || !formData.mesa ? ' btn-disabled' : ''}`}
+                                className={`save-btn${(!formData.sede || !formData.mesa || !hasAvailableProducts) ? ' btn-disabled' : ''}`}
                                 onClick={handleStartOrder}
-                                disabled={!formData.sede || !formData.mesa}
-                                style={!formData.sede || !formData.mesa ? { backgroundColor: '#ccc', color: '#666', cursor: 'not-allowed' } : {}}
+                                disabled={!formData.sede || !formData.mesa || !hasAvailableProducts}
+                                style={!formData.sede || !formData.mesa || !hasAvailableProducts ? { backgroundColor: '#ccc', color: '#666', cursor: 'not-allowed' } : {}}
                             >
                                 Start order
                             </button>
@@ -680,10 +672,8 @@ function TakeTableOrder() {
                         </button>
                         <button
                             type="button"
-                            className={`cancel-btn${preOrderItems.length === 0 ? ' btn-disabled' : ''}`}
-                            disabled={preOrderItems.length === 0}
+                            className="cancel-btn"
                             onClick={handleCancelOrder}
-                            style={preOrderItems.length === 0 ? { backgroundColor: '#ccc', color: '#666', cursor: 'not-allowed' } : {}}
                         >
                             Cancel
                         </button>
