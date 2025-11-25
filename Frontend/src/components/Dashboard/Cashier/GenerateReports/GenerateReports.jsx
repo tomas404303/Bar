@@ -19,6 +19,24 @@ function GenerateReports() {
     const handleGenerateReport = async (e) => {
         e.preventDefault();
 
+        setSuccess("");
+        setError("");
+
+        if (fechaInicio && fechaFin) {
+            const startDate = new Date(fechaInicio);
+            const endDate = new Date(fechaFin);
+
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+                setError("Please provide valid date and time values.");
+                return;
+            }
+
+            if (startDate >= endDate) {
+                setError("Start date must be earlier than end date.");
+                return;
+            }
+        }
+
         try {
             const params = new URLSearchParams({
                 cargo: cargo,
@@ -66,7 +84,7 @@ function GenerateReports() {
                             <div>
                                 <label>Start Date</label>
                                 <input 
-                                    type="date" 
+                                    type="datetime-local" 
                                     value={fechaInicio} 
                                     onChange={(e) => setFechaInicio(e.target.value)}
                                 />
@@ -76,7 +94,7 @@ function GenerateReports() {
                             <div>
                                 <label>End Date</label>
                                 <input 
-                                    type="date" 
+                                    type="datetime-local" 
                                     value={fechaFin} 
                                     onChange={(e) => setFechaFin(e.target.value)}
                                 />

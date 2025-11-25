@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 from typing import Optional, List, Dict, Any
 from Database import connect_to_sqlserver
 from datetime import datetime
@@ -136,27 +136,45 @@ def exportar_csv(
     - Cashier → exporta SOLO su sede.
     """
 
+    def parse_datetime_param(valor: Optional[str]) -> Optional[datetime]:
+        if not valor:
+            return None
+        try:
+            # Permite formatos como 2025-11-01T08:00 o 2025-11-01 08:00:00
+            return datetime.fromisoformat(valor)
+        except ValueError:
+            for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                try:
+                    return datetime.strptime(valor, fmt)
+                except ValueError:
+                    continue
+        raise HTTPException(status_code=400, detail=f"Invalid date format for value '{valor}'")
+
     rol = 3 if cargo == "Administrator" else 2
     sede_usuario = sede
 
+    fecha_inicio_dt = parse_datetime_param(fechaInicio)
+    fecha_fin_dt = parse_datetime_param(fechaFin)
+
     db = connect_to_sqlserver()
     try:
-        sede_consulta = None if rol == 3 else sede_usuario
-
-        filas = obtener_filas_reporte(db, fechaInicio, fechaFin, sede_consulta, codigoProducto)
+        sede_consulta = None
 
         if rol == 2:
-            # Convertir nombre de sede a ID si es necesario
             cursor = db.cursor()
-            cursor.execute("SELECT id FROM sucursales WHERE nombre = ?", (sede_usuario,))
+            cursor.execute(
+                "SELECT id FROM sucursales WHERE nombre = ? OR CAST(id AS VARCHAR(20)) = ?",
+                (sede_usuario, sede_usuario)
+            )
             sede_result = cursor.fetchone()
             cursor.close()
-            
-            if sede_result:
-                sede_id = sede_result[0]
-                filas = [f for f in filas if f["idSede"] == sede_id]
-            else:
-                filas = []
+
+            if not sede_result:
+                raise HTTPException(status_code=404, detail="Branch not found for current user")
+
+            sede_consulta = sede_result[0]
+
+        filas = obtener_filas_reporte(db, fecha_inicio_dt, fecha_fin_dt, sede_consulta, codigoProducto)
 
         agrupar_recursivo(filas, ["sede", "codigoProducto"])
 
