@@ -26,7 +26,7 @@ class CrearCategoria(BaseModel):
 
 
 def generar_nuevo_id(cursor):
-    query = "SELECT ISNULL(MAX(id), 0) + 1 FROM productos"
+    query = "SELECT ISNULL(MAX(CAST(id AS INT)), 0) + 1 FROM productos"
     cursor.execute(query)
     return cursor.fetchone()[0]
 
@@ -46,6 +46,7 @@ def listar_productos():
                 p.idCategoria
             FROM productos p
             INNER JOIN categoriaProducto cp ON cp.id = p.idCategoria
+            ORDER BY CAST(p.id AS INT)
         """
         cursor.execute(query)
         rows = cursor.fetchall()
