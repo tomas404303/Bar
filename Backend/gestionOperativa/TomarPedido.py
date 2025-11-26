@@ -145,7 +145,7 @@ def productos_disponibles(cargo: str = Query(...), sede: str = Query(None)):
                 "idSucursal": r[6],
             })
 
-        productos_ordenados = merge_sort(result, "valorVenta")
+        productos_ordenados = merge_sort(result, "cantidad")
         return productos_ordenados
     
     except pyodbc.Error as e:

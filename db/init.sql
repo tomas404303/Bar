@@ -240,6 +240,167 @@ begin
 end
 GO
 
+-- Trigger: Valida que no se ingrese cantidades negativas en inventario
+CREATE TRIGGER trg_ValidarInventarioNoNegativo
+ON inventario
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF EXISTS (
+        SELECT 1
+        FROM inventario i
+        JOIN inserted ins ON ins.idSucursal = i.idSucursal AND ins.idProducto = i.idProducto
+        WHERE ins.cantidad < 0
+    )
+    BEGIN
+        RAISERROR ('Error: La cantidad en el inventario no puede ser negativa.', 16, 1);
+        ROLLBACK TRANSACTION; 
+        RETURN;
+    END;
+
+    IF EXISTS (
+        SELECT 1
+        FROM inserted ins
+        WHERE ins.cantidad < 0
+    )
+    BEGIN
+        RAISERROR ('Error: Operación cancelada, inventario negativo detectado.', 16, 1);
+        ROLLBACK TRANSACTION; 
+        RETURN;
+    END;
+END;
+GO
+
+-- SP: Para sacar el máximo beneficio de una sede.
+
+CREATE OR ALTER PROCEDURE sp_MochilaInventario
+    @Capacidad INT,
+    @idSede INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @items TABLE (
+        idx INT IDENTITY(1,1),
+        idProducto INT,
+        peso INT,
+        valor INT
+    );
+
+    INSERT INTO @items (idProducto, peso, valor)
+    SELECT p.id, i.cantidad, p.valorVenta
+    FROM inventario i
+    INNER JOIN productos p ON p.id = i.idProducto
+    WHERE i.idSucursal = @idSede;
+
+    DECLARE @n INT = (SELECT COUNT(*) FROM @items);
+
+    DECLARE @DP TABLE (
+        i INT,
+        w INT,
+        val INT
+    );
+
+    DECLARE @row INT = 0;
+    WHILE @row <= @n
+    BEGIN
+        DECLARE @col INT = 0;
+        WHILE @col <= @Capacidad
+        BEGIN
+            INSERT INTO @DP VALUES (@row, @col, 0);
+            SET @col += 1;
+        END
+        SET @row += 1;
+    END
+
+    DECLARE cur CURSOR FOR SELECT idProducto, peso, valor FROM @items ORDER BY idx;
+    OPEN cur;
+
+    DECLARE @id INT, @peso INT, @valor INT, @i INT = 1;
+    FETCH NEXT FROM cur INTO @id, @peso, @valor;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        DECLARE @cap INT = 0;
+        WHILE @cap <= @Capacidad
+        BEGIN
+            IF @peso > @cap
+            BEGIN
+                UPDATE @DP
+                SET val = (SELECT val FROM @DP WHERE i = @i - 1 AND w = @cap)
+                WHERE i = @i AND w = @cap;
+            END
+            ELSE
+            BEGIN
+                DECLARE @sin_item INT = (SELECT val FROM @DP WHERE i = @i - 1 AND w = @cap);
+                DECLARE @con_item INT = (
+                    (SELECT val FROM @DP WHERE i = @i - 1 AND w = @cap - @peso)
+                    + @valor
+                );
+
+                UPDATE @DP
+                SET val = CASE WHEN @con_item > @sin_item THEN @con_item ELSE @sin_item END
+                WHERE i = @i AND w = @cap;
+            END
+
+            SET @cap += 1;
+        END
+        
+        SET @i += 1;
+        FETCH NEXT FROM cur INTO @id, @peso, @valor;
+    END
+
+    CLOSE cur;
+    DEALLOCATE cur;
+
+    DECLARE @maxValor INT;
+    SELECT TOP 1 @maxValor = val
+    FROM @DP
+    ORDER BY i DESC, w DESC;
+
+    DECLARE @w INT = @Capacidad;
+    DECLARE @idx INT = @n;
+
+    DECLARE @resultado TABLE (
+        idProducto INT,
+        nombre VARCHAR(100),
+        peso INT,
+        valor INT
+    );
+
+    WHILE @idx > 0 AND @w >= 0
+    BEGIN
+        DECLARE @valActual INT = (SELECT val FROM @DP WHERE i = @idx AND w = @w);
+        DECLARE @valArriba INT = (SELECT val FROM @DP WHERE i = @idx - 1 AND w = @w);
+
+        IF @valActual <> @valArriba
+        BEGIN
+            DECLARE @pid INT, @ppeso INT, @pvalor INT;
+
+            SELECT @pid = idProducto, @ppeso = peso, @pvalor = valor
+            FROM @items WHERE idx = @idx;
+
+            INSERT INTO @resultado
+            SELECT p.id, p.nombre, @ppeso, @pvalor
+            FROM productos p
+            WHERE p.id = @pid;
+
+            SET @w = @w - @ppeso;
+        END
+
+        SET @idx -= 1;
+    END
+
+    SELECT @maxValor AS MaximoValor;
+
+    SELECT * FROM @resultado;
+
+END
+GO
+
+
 insert into tDocumento (abrevicion, definicion)
 values
     ('CC', 'Cédula de ciudadanía'),
