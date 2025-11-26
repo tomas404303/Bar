@@ -205,6 +205,41 @@ begin
 end
 GO
 
+-- Trigger: Reestablecer inventario al cerrar venta (cambiar estadoVenta de 1 a 0)
+create or alter trigger reestablecerInventarioAlCerrarVenta
+on venta
+after UPDATE
+as
+begin
+    set nocount on;
+
+    if UPDATE(estadoVenta)
+    begin
+        UPDATE Inv
+        set Inv.cantidad = Inv.cantidad + Totales.CantidadTotal
+        from inventario Inv
+        INNER JOIN (
+            select 
+                dp.idProducto, 
+                v.idSede,
+                SUM(dp.cantidad) as CantidadTotal
+            from detallesVentaPreOrden dp
+            INNER JOIN inserted i on dp.idVenta = i.id
+            INNER JOIN deleted d on i.id = d.id
+            INNER JOIN venta v on v.id = i.id
+            where d.estadoVenta = 1 AND i.estadoVenta = 0
+            group by dp.idProducto, v.idSede
+        ) Totales ON Inv.idProducto = Totales.idProducto AND Inv.idSucursal = Totales.idSede;
+
+        delete dp
+        from detallesVentaPreOrden dp
+        INNER JOIN inserted i on dp.idVenta = i.id
+        INNER JOIN deleted d on i.id = d.id
+        where d.estadoVenta = 1 AND i.estadoVenta = 0;
+    end
+end
+GO
+
 insert into tDocumento (abrevicion, definicion)
 values
     ('CC', 'Cédula de ciudadanía'),
